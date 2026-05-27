@@ -16,6 +16,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 | Version | Date       | Link |
 |---------|------------|------|
+| **v1.1.1** | 2026-05-27 | [RAMFlux_Setup_1.1.1.msi](https://github.com/luizfernando1096lf-art/ramflux/releases/download/v1.1.1/RAMFlux_Setup_1.1.1.msi) |
 | **v1.1.0** | 2026-05-27 | [RAMFlux_Setup_1.1.0.msi](https://github.com/luizfernando1096lf-art/ramflux/releases/download/v1.1.0/RAMFlux_Setup_1.1.0.msi) |
 
 ### Requirements
