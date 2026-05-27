@@ -5,6 +5,18 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.2] — 2026-05-27
+
+### Fixed
+- **UI: fundo branco na aba Console** — `ConsoleWidget` não tinha background explícito, herdando o tema claro do sistema. Adicionado `setStyleSheet("background-color: #1e1e2e")` no widget
+- **UI: linhas brancas alternadas na tabela de processos** — `setAlternatingRowColors(true)` sem regra `::item:alternate` usava a cor padrão do sistema (branca). Adicionado `QTableWidget::item:alternate { background-color: #181825; }`
+
+### Changed
+- `ConsoleWidget`: fundo explícito `#1e1e2e` (Catppuccin Base) no widget raiz
+- `ProcessListWidget`: estilo `::item:alternate` com `#181825` (Catppuccin Mantle) para uniformizar fundo escuro
+
+---
+
 ## [Unreleased]
 
 ### Fixed
