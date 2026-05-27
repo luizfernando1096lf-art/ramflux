@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **getPhysicalMemoryBreakdown returning zero** — 512-byte buffer for Win11 `NtQuerySystemInformation`
 
 ### Changed
+- **Version consistency** — all version strings (System Info, About, app metadata, log) now read from a single `Constants::APP_VERSION` source; hardcoded `"2.0.0"` and `"1.0.0"` strings replaced
 - Process list now refreshes every 3 seconds instead of every 1 second (reduces CPU usage ~3x on the telemetry thread)
 - `Version::getFullVersion()` now reads from `Constants::APP_VERSION` (single source of truth)
 - About dialog reads version from `Constants::APP_VERSION`
