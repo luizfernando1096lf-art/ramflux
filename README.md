@@ -2,11 +2,21 @@
 
 Real-time memory monitoring and optimization tool for Windows 10/11.
 
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** — incompatible UI/behavior changes or architectural rewrites
+- **MINOR** — new features, optional behavior changes
+- **PATCH** — bug fixes, performance improvements, internal refactors
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
+
 ## Download
 
-| Version | Link |
-|---------|------|
-| **v1.1.0** (latest) | [RAMFlux_Setup_1.1.0.msi](https://github.com/luizfernando1096lf-art/ramflux/releases/download/v1.1.0/RAMFlux_Setup_1.1.0.msi) |
+| Version | Date       | Link |
+|---------|------------|------|
+| **v1.1.0** | 2026-05-27 | [RAMFlux_Setup_1.1.0.msi](https://github.com/luizfernando1096lf-art/ramflux/releases/download/v1.1.0/RAMFlux_Setup_1.1.0.msi) |
 
 ### Requirements
 - Windows 10 or 11 (64-bit)
