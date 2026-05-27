@@ -1,154 +1,121 @@
-# RAMFlux - Sistema de Análise de Fluxo de Memória
+# RAMFlux — Intelligent Memory Orchestrator for Windows
 
-## 📋 Visão Geral
+**RAMFlux** is a real-time memory monitoring and optimization tool for Windows 10/11, built with **Qt 6** and **C++20**. It provides deep system memory insights, automatic cache cleaning, process management, and leak detection — all through a modern, dark-themed interface.
 
-RAMFlux é uma aplicação desktop de análise de fluxo de memória, desenvolvida com **Qt6** e **C++20**. A aplicação analisa processos, monitora uso de memória e gera telemetria em tempo real.
+## Features
 
-## 🏗️ Arquitetura
+- **Real-time Dashboard** — Memory charts, pressure scoring, and live telemetry at a glance
+- **Process Manager** — View, analyze, and manage running processes with detailed memory metrics
+- **Smart Optimization** — One-click "Smart Optimize" and "Deep Clean" to reclaim memory
+- **Auto-Optimize** — Adaptive background cleaning based on system pressure and profiles
+- **ProBalance** — Reduces priority of memory-heavy processes to keep the system responsive
+- **Leak Hunter** — Detects processes with abnormal memory growth over time
+- **File Cache Analyzer** — Shows which files are consuming the most system cache
+- **Memory Map** — Visual breakdown of physical memory page distribution (Active, Standby, Modified, etc.)
+- **Game Mode** — Automatically detects games and adjusts cleaning behavior for a smoother experience
+- **Profiles** — Economy, Balanced, Performance, and Gaming presets
+- **System Info** — Detailed OS, RAM, kernel, and page file information
+- **Scheduled Cleaning** — Regular automated deep cleaning
+- **Custom Settings** — Fine-tune polling intervals, clean areas, thresholds, and more
+- **Console Log** — Real-time event log with severity filtering
+- **System Tray** — Minimizes to tray with background operation
 
-```
-RAMFlux/
-├── CMakeLists.txt          # Configuração do CMake
-├── build.bat               # Build script Windows
-├── build.ps1               # Build script PowerShell
-├── release/                # Arquivos de distribuição
-├── assets/                 # Imagens e recursos
-├── src/
-│   ├── core/
-│   │   ├── Version.h
-│   │   └── Version.cpp
-│   ├── telemetry/
-│   │   ├── TelemetryEngine.h/.cpp
-│   │   ├── FluxTelemetry.h/.cpp
-│   │   ├── FluxCleaner.h/.cpp
-│   │   ├── FluxPressureAnalyzer.h/.cpp
-│   │   ├── PressureMonitor.h/.cpp
-│   │   ├── MemoryMetrics.h/.cpp
-│   │   └── WindowsMetrics.h/.cpp
-│   ├── process/
-│   │   ├── ProcessMonitor.h/.cpp
-│   │   ├── ProcessAnalytics.h/.cpp
-│   │   ├── ProcessSnapshot.h/.cpp
-│   │   ├── IProcessObserver.h/.cpp
-│   │   ├── ProcessMonitorObserver.h/.cpp
-│   │   └── ProcessAnalyzer.h/.cpp
-│   ├── ui/
-│   │   ├── MainWindow.h/.cpp
-│   │   └── dashboard/
-│   │       ├── DashboardController.h/.cpp
-│   │       ├── DashboardView.h/.cpp
-│   │       ├── DashboardWidget.h/.cpp
-│   │       ├── MemoryChartWidget.h/.cpp
-│   │       └── SystemInfoCard.h/.cpp
-│   ├── MemoryCollector.h/.cpp
-│   ├── MemorySnapshot.h/.cpp
-│   └── main.cpp
-├── CMakeCache.txt          # Cache do CMake (gerado)
-└── build/                  # Pasta de build (gerada)
-```
+## Screenshots
 
-## 📦 Requisitos
+*(Screenshots coming soon)*
+
+## Download
+
+| Version | Link |
+|---------|------|
+| **v1.1.0** (latest) | [RAMFlux_Setup_1.1.0.msi](https://github.com/luizfernando1096lf-art/ramflux/releases/latest) |
+
+### Requirements
+
+- Windows 10 or 11 (64-bit)
+- 4 GB RAM (minimum)
+- 200 MB disk space
+- Administrator privileges for full functionality
+
+## Building from Source
+
+### Prerequisites
 
 - **Windows 10/11** (64-bit)
-- **Visual Studio 2022** (Community/Professional/Enterprise)
-- **Qt 6.5+** (com MSVC 2019/2022)
+- **Qt 6.11.0+** (MinGW or MSVC)
 - **CMake 3.20+**
-- **Windows SDK** 10.0.19041+
+- **MinGW** (13.1.0+) or **Visual Studio 2022**
+- **WiX Toolset v7.0** (optional, for MSI installer)
 
-## 🚀 Instalação
+### Quick Build (PowerShell)
 
-### 1. Instalar Dependências
-
-Baixe e instale:
-- [CMake](https://cmake.org/download/)
-- [Qt6](https://www.qt.io/download) (versão com MSVC)
-- [Visual Studio 2022](https://visualstudio.microsoft.com/)
-
-### 2. Build do Projeto
-
-**Opção A: Using PowerShell (Recomendado)**
 ```powershell
 .\build.ps1
 ```
 
-**Opção B: Using Batch File**
-```cmd
-build.bat
-```
+### Manual Build
 
-**Opção C: Usar CMake diretamente**
 ```cmd
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -A x64
-cmake --build . --config Release
+cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build .
 ```
 
-## 🎮 Uso
+### Build Installer
 
-Após o build, os arquivos estarão em:
-
+```cmd
+cd build
+cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build .
+cd ..
+wix build installer.wxs -ext WixToolset.UI.wixext -out RAMFlux_Setup_x.x.x.msi
 ```
-release/
-├── RAMFlux.exe
-├── Qt6Plugins/
-└── *.dll
-```
 
-Execute:
+### Deploy
+
 ```powershell
-.\release\RAMFlux.exe
+# Copy built exe + dependencies to deployment folder:
+Copy-Item build/RAMFlux.exe C:\ramflux\
+# (Qt DLLs and platforms/qwindows.dll must also be copied)
 ```
 
-## 📖 Estrutura do Projeto
+## Project Structure
 
-### Módulo de Dashboard
-- **DashboardView** - Layout principal
-- **DashboardController** - Lógica de controle
-- **DashboardWidget** - Container do dashboard
-- **MemoryChartWidget** - Gráficos de memória
-- **SystemInfoCard** - Informações do sistema
+```
+RAMFlux/
+├── CMakeLists.txt
+├── build.ps1 / build.bat          # Build scripts
+├── installer.wxs                  # WiX installer definition
+├── installer/                     # Installer assets (EULA)
+├── resources/                     # Icons, RC files, Qt resources
+├── src/
+│   ├── main.cpp                   # Entry point
+│   ├── core/                      # EventBus, Logger, ModuleManager
+│   ├── ntapi/                     # Windows NT API wrappers (native)
+│   ├── telemetry/                 # Memory collection, pressure analysis
+│   ├── cleaner/                   # Memory cleaning routines (standby, modified, etc.)
+│   ├── optimizer/                 # Optimization logic, foreground protection
+│   ├── scheduler/                 # ProBalance scheduler
+│   ├── profiles/                  # Profile management (Economy, Balanced, etc.)
+│   ├── leakhunter/                # Memory leak detection
+│   ├── gamemode/                  # Game detection and mode switching
+│   ├── ui/                        # Qt widgets (MainWindow, settings, charts, tray, etc.)
+│   ├── settings/                  # Settings persistence
+│   └── shared/                    # Shared constants and types
+```
 
-### Módulo de Telemetria
-- **TelemetryEngine** - Engine principal
-- **FluxTelemetry** - Telemetria RAMFlux
-- **FluxCleaner** - Limpeza de telemetria
-- **FluxPressureAnalyzer** - Análise de pressão
-- **PressureMonitor** - Monitor de pressão
-- **MemoryMetrics** - Métricas de memória
-- **WindowsMetrics** - Métricas do Windows
+## Tech Stack
 
-### Módulo de Processos
-- **ProcessMonitor** - Monitor de processos
-- **ProcessAnalyzer** - Análise de processos
-- **ProcessSnapshot** - Captura de snapshot
-- **ProcessAnalytics** - Análise avançada
-- **IProcessObserver** - Interface de observer
-- **ProcessMonitorObserver** - Observer do monitor
+| Layer | Technology |
+|-------|-----------|
+| Language | C++20 |
+| GUI Framework | Qt 6.11 (Widgets, Charts, SystemTray) |
+| Build System | CMake 3.20+ |
+| Compiler | MinGW 13.1.0 / MSVC 2022 |
+| Installer | WiX Toolset v7 |
+| Native APIs | Win32, NtQuerySystemInformation, Toolhelp32 |
 
-## 🔧 Customização
+## License
 
-### Adicionar novos gráficos
-
-1. Crie um arquivo `.cpp` no diretório `src/ui/dashboard/`
-2. Adicione no `CMakeLists.txt`
-3. Compile com `build.ps1`
-
-### Configurar telemetria
-
-Edite `src/telemetry/TelemetryEngine.cpp` para ajustar:
-- Limite de métricas (`METRICS_LIMIT`)
-- Taxa de atualização (`UPDATERATE`)
-
-## 📝 Licença
-
-Este projeto está disponível para uso pessoal e comercial.
-
-## 📞 Suporte
-
-Para dúvidas e suporte, entre em contato com o desenvolvedor.
-
----
-
-**Versão Atual:** 1.0.0  
-**Última Atualização:** 13/05/2026
+MIT — see [LICENSE](LICENSE) for details.
