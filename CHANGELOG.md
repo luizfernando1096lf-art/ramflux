@@ -7,13 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
+### Fixed
+- **High CPU usage** — process enumeration (`CreateToolhelp32Snapshot` + `OpenProcess` per process) now runs every 3 seconds instead of every second; results are cached between scans
+- **Crash: EventBus use-after-free** — callbacks now use `QPointer<MainWindow>` instead of raw `this`, preventing dangling pointer access when MainWindow is destroyed while a telemetry callback is in flight
+- **Crash: detached thread use-after-free** — `onFileCacheUpdated()` uses `QPointer` created before `std::thread` launch; thread body wrapped in `try-catch` to prevent `std::terminate` on exception; GUI update callback checks `QPointer` before accessing members
+- **UI freeze when opening external apps** — `NtApi::getTopFileCache(50)` moved to background thread (was blocking GUI thread for seconds under memory pressure)
+- **Memory Map bars not showing** — reverted `getPhysicalMemoryBreakdown()` back to GUI thread (single NT API call, <1ms)
+- **Memory Map progress bars not displaying colors** — restored synchronous execution for memory map updates
+- **PressureHigh/PressureCritical firing together** — `else if` guard added
+- **Logger callback use-after-free** — `setCallback(nullptr)` in destructor
+- **ProBalance logic** — monotonic priority comparison fixed
+- **getProcessStandbyMemory returning garbage** — returns 0 (API not available per-process)
+- **getPhysicalMemoryBreakdown returning zero** — 512-byte buffer for Win11 `NtQuerySystemInformation`
 
 ### Changed
-
-### Fixed
-
-### Removed
+- Process list now refreshes every 3 seconds instead of every 1 second (reduces CPU usage ~3x on the telemetry thread)
+- `Version::getFullVersion()` now reads from `Constants::APP_VERSION` (single source of truth)
+- About dialog reads version from `Constants::APP_VERSION`
+- MemoryCollector: removed expensive `getTopFileCache(5)` from per-second polling loop
+- MainWindow default size: 1100×760
+- SettingsDialog: QScrollArea wrapper, reduced fonts, 520×400 min size
+- HistoryChart overlay default: "RAM Usage (GB)"
 
 ---
 
