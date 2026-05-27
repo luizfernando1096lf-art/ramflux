@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>app.ico</file>
+        <file>manual_pt.txt</file>
+        <file>manual_en.txt</file>
+    </qresource>
+</RCC>

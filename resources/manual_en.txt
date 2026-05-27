@@ -1,0 +1,276 @@
+==============================
+        RAMFlux - User Manual
+==============================
+Version 1.1.0
+
+TABLE OF CONTENTS
+1. Introduction
+2. Installation
+3. Main Interface
+4. Dashboard Tab
+5. Processes Tab
+6. Leak Hunter Tab
+7. File Summary Tab
+8. Memory Map Tab
+9. System Info Tab
+10. Console Tab
+11. Settings
+12. Game Mode
+13. ProBalance
+14. Troubleshooting
+
+==============================
+1. INTRODUCTION
+==============================
+
+RAMFlux is a memory monitoring and optimization tool for Windows.
+It provides real-time system memory information, cache cleaning
+capabilities, and management of high-RAM processes.
+
+
+==============================
+2. INSTALLATION
+==============================
+
+Run the MSI installer and follow the on-screen instructions.
+RAMFlux will be installed in Program Files and a shortcut
+will be created in the Start Menu.
+
+Requirements:
+- Windows 10 or 11 (64-bit)
+- 4 GB RAM (minimum)
+- 200 MB disk space
+
+
+==============================
+3. MAIN INTERFACE
+==============================
+
+RAMFlux is organized into tabs at the top of the window:
+
+- Dashboard: system overview
+- Processes: process list with memory usage
+- Leak Hunter: memory leak detection
+- File Summary: cached files in the system
+- Memory Map: physical memory page distribution
+- System Info: detailed system information
+- Console: event log and diagnostics
+
+The status bar at the bottom shows:
+- Current optimizer status
+- Cleaning statistics
+- Game mode indicator
+
+
+==============================
+4. DASHBOARD TAB
+==============================
+
+Displays real-time information cards:
+- Used / Free RAM
+- Memory Load (%)
+- Pressure Score
+- Committed Memory
+- Standby Memory
+- Compressed Memory
+- Modified Memory
+- Process Count
+- Page Faults
+
+Below the cards:
+- Memory Timeline chart
+- "Smart Optimize" and "Deep Clean" buttons
+- "Auto-Optimize" checkbox for automatic optimization
+- Profile selector (Economy, Balanced, Performance, Gaming)
+
+The chart supports overlay metrics: RAM Usage, Free RAM,
+Commit Usage, and Standby Memory via the Overlay selector.
+
+
+==============================
+5. PROCESSES TAB
+==============================
+
+Lists all running processes with:
+- PID
+- Process name
+- Working Set (physical memory in use)
+- Private Memory
+- Page File Usage
+- Page Faults
+- Threads
+- CPU %
+
+Double-click a process for details:
+- Working Set, Page Table, Handles, I/O
+- Priority, Start Time
+- Process telemetry data
+
+Right-click for:
+- Copy name and PID
+- Trim Working Set
+- Set priority
+- Terminate process
+
+
+==============================
+6. LEAK HUNTER TAB
+==============================
+
+Monitors processes for memory leaks:
+- Lists processes with abnormal memory growth
+- Shows current usage, peak, and growth rate
+- Alerts when a process exceeds the configured threshold
+
+The alert threshold can be adjusted in Settings
+(Leak Detection > Alert Threshold).
+
+
+==============================
+7. FILE SUMMARY TAB
+==============================
+
+Shows the most widely cached files in system memory,
+sorted by total size. Each entry displays:
+- File name
+- Total memory size
+- Number of processes that loaded it
+
+Auto-updates every 15 seconds.
+
+
+==============================
+8. MEMORY MAP TAB
+==============================
+
+Displays physical memory page distribution:
+- Active: pages in active use
+- Standby: cached pages (ready for reuse)
+- Modified: modified pages
+- Modified No-Write: modified pages without pending write
+- Transition: pages in transition
+- Zeroed: zeroed pages
+- Free: free pages
+- Bad: defective pages
+
+Each category shows a progress bar and size in GB.
+
+
+==============================
+9. SYSTEM INFO TAB
+==============================
+
+Detailed system information:
+- Windows version (build number)
+- Total/Free RAM
+- Kernel Memory (paged and non-paged)
+- Virtual Memory (used/total)
+- Page File (used/total)
+- Memory compression
+- Logical processor count
+
+Auto-updates every telemetry cycle.
+
+
+==============================
+10. CONSOLE TAB
+==============================
+
+Displays the RAMFlux event log:
+- Startup and shutdown messages
+- Cleaning results
+- Errors and warnings
+- Diagnostics information
+
+Use the filter at the top to select the minimum log level.
+"Clear" button to clear the log.
+
+
+==============================
+11. SETTINGS
+==============================
+
+Access via File > Settings.
+
+Profile:
+- Economy: maximum power saving
+- Balanced: balanced default optimization
+- Performance: maximum cleanup
+- Gaming: anti-stutter mode
+- Custom: manual settings
+
+Behavior:
+- Auto-optimization: enables automatic adaptive cleaning
+- Game Mode Detection: detects running games
+- Auto-detect full-screen games: detects full-screen apps
+- Start Minimized: starts minimized to tray
+- Start with Windows: starts with Windows boot
+- Notification: show notification after cleaning
+
+Polling: update interval (200-5000 ms)
+
+Leak Detection: alert threshold for memory leaks (MB)
+
+Auto-Clean Threshold: free memory threshold for auto-clean
+
+Clean Areas: select areas to clean (Standby, Modified,
+Working Sets, File Cache, Combined List, Defrag)
+
+ProBalance: lowers priority of memory-heavy processes
+
+Startup Optimization: initial clean after system startup
+
+Scheduled Cleaning: schedule regular deep cleaning
+
+
+==============================
+12. GAME MODE
+==============================
+
+When enabled, RAMFlux detects running games and:
+- Reduces automatic cleaning frequency
+- Prioritizes game performance
+- Avoids aggressive cleaning during gameplay
+
+Detection can be automatic (full-screen) or by known
+game list.
+
+
+==============================
+13. PROBALANCE
+==============================
+
+ProBalance monitors high-memory processes. When a process
+exceeds the configured threshold, its priority is lowered
+to BELOW_NORMAL, freeing resources for other processes.
+When the process memory usage drops, the original priority
+is restored.
+
+Configuration:
+- Enable in Settings > ProBalance
+- Adjust memory threshold (128-4096 MB)
+
+
+==============================
+14. TROUBLESHOOTING
+==============================
+
+RAMFlux won't open:
+- Verify Visual C++ Redistributable is installed
+- Run as administrator for full functionality
+
+Cleaning doesn't work:
+- Run as administrator
+- Verify Superfetch/SysMain service is running
+
+Application closes unexpectedly:
+- Run diagnostics in Settings > Behavior
+- Check the Console for error messages
+- Update to the latest version
+
+"Access Denied" when cleaning:
+- Some operations require administrator privileges
+- Run RAMFlux as administrator
+
+==============================
+© 2026 RAMFlux Technologies

@@ -1,0 +1,277 @@
+==============================
+        RAMFlux - Manual do Usuário
+==============================
+Versão 1.1.0
+
+ÍNDICE
+1. Introdução
+2. Instalação
+3. Interface Principal
+4. Aba Dashboard
+5. Aba Processes
+6. Aba Leak Hunter
+7. Aba File Summary
+8. Aba Memory Map
+9. Aba System Info
+10. Aba Console
+11. Configurações
+12. Modo Jogo
+13. ProBalance
+14. Solução de Problemas
+
+==============================
+1. INTRODUÇÃO
+==============================
+
+RAMFlux é uma ferramenta de monitoramento e otimização de memória
+para Windows. Ele fornece informações em tempo real sobre o uso de
+memória do sistema, permite limpeza de memória cache e gerencia
+processos com alto consumo de RAM.
+
+
+==============================
+2. INSTALAÇÃO
+==============================
+
+Execute o instalador MSI e siga as instruções na tela. O RAMFlux
+será instalado em Arquivos de Programas e um atalho será criado
+no Menu Iniciar.
+
+Requisitos:
+- Windows 10 ou 11 (64 bits)
+- 4 GB de RAM (mínimo)
+- 200 MB de espaço em disco
+
+
+==============================
+3. INTERFACE PRINCIPAL
+==============================
+
+O RAMFlux organiza-se em abas, acessíveis na parte superior da janela:
+
+- Dashboard: visão geral do sistema
+- Processes: lista de processos com consumo de memória
+- Leak Hunter: detecção de vazamentos de memória
+- File Summary: arquivos em cache no sistema
+- Memory Map: distribuição de páginas de memória física
+- System Info: informações detalhadas do sistema
+- Console: log de eventos e diagnósticos
+
+Na barra inferior (status bar) você encontra:
+- Status atual do otimizador
+- Estatísticas de limpeza
+- Indicador de modo jogo
+
+
+==============================
+4. ABA DASHBOARD
+==============================
+
+Exibe cartões com informações em tempo real:
+- RAM Usada / Livre
+- Carga de Memória (%)
+- Pontuação de Pressão
+- Memória Comprometida
+- Memória em Espera (Standby)
+- Memória Comprimida
+- Memória Modificada
+- Número de Processos
+- Falhas de Página
+
+Abaixo dos cartões:
+- Gráfico de linha do tempo (Memory Timeline)
+- Botões "Smart Optimize" e "Deep Clean"
+- Checkbox "Auto-Optimize" para ativar otimização automática
+- Seletor de perfil (Economy, Balanced, Performance, Gaming)
+
+O gráfico permite sobrepor métricas como RAM Usage, Free RAM,
+Commit Usage e Standby Memory usando o seletor "Overlay".
+
+
+==============================
+5. ABA PROCESSES
+==============================
+
+Lista todos os processos em execução com:
+- PID
+- Nome do processo
+- Working Set (memória física em uso)
+- Memória Privada
+- Page File Usage
+- Page Faults
+- Threads
+- CPU %
+
+Clique duas vezes em um processo para abrir detalhes:
+- Working Set, Page Table, Handles, I/O
+- Prioridade, Data de Início
+- Dados de telemetria do processo
+
+Clique com o botão direito para:
+- Copiar nome e PID
+- Trim Working Set (liberar memória)
+- Definir prioridade
+- Encerrar processo
+
+
+==============================
+6. ABA LEAK HUNTER
+==============================
+
+Monitora processos em busca de vazamentos de memória:
+- Lista processos com crescimento anormal de memória
+- Exibe uso atual, pico e taxa de crescimento
+- Alerta quando um processo excede o limite configurado
+
+O limite de alerta pode ser ajustado nas Configurações
+(aba Leak Detection > Alert Threshold).
+
+
+==============================
+7. ABA FILE SUMMARY
+==============================
+
+Mostra os arquivos mais presentes no cache de memória do sistema,
+ordenados por tamanho total. Cada entrada exibe:
+- Nome do arquivo
+- Tamanho total em memória
+- Número de processos que o carregaram
+
+Atualiza automaticamente a cada 15 segundos.
+
+
+==============================
+8. ABA MEMORY MAP
+==============================
+
+Exibe a distribuição de páginas de memória física:
+- Active: páginas em uso ativo
+- Standby: páginas em cache (prontas para reúso)
+- Modified: páginas modificadas
+- Modified No-Write: páginas modificadas sem gravação pendente
+- Transition: páginas em transição
+- Zeroed: páginas zeradas
+- Free: páginas livres
+- Bad: páginas com defeito
+
+Cada categoria mostra barra de progresso e valor em GB.
+
+
+==============================
+9. ABA SYSTEM INFO
+==============================
+
+Informações detalhadas do sistema:
+- Versão do Windows (build number)
+- Memória RAM total/livre
+- Memória Kernel (paginada e não-paginada)
+- Memória Virtual (usada/total)
+- Page File (usado/total)
+- Compressão de memória
+- Número de processadores lógicos
+
+Atualiza automaticamente a cada ciclo de telemetria.
+
+
+==============================
+10. ABA CONSOLE
+==============================
+
+Exibe o log de eventos do RAMFlux:
+- Mensagens de inicialização e desligamento
+- Resultados de limpeza
+- Erros e avisos
+- Informações de diagnóstico
+
+Use o filtro no topo para selecionar o nível mínimo exibido.
+Botão "Clear" para limpar o log.
+
+
+==============================
+11. CONFIGURAÇÕES
+==============================
+
+Acesse pelo menu File > Settings.
+
+Perfil (Profile):
+- Economy: máxima economia de energia
+- Balanced: otimização padrão equilibrada
+- Performance: limpeza máxima
+- Gaming: modo anti-travamentos
+- Custom: configurações manuais
+
+Comportamento (Behavior):
+- Auto-optimization: ativa limpeza adaptativa automática
+- Game Mode Detection: detecta jogos em execução
+- Auto-detect full-screen games: detecta jogos em tela cheia
+- Start Minimized: inicia minimizado na bandeja
+- Start with Windows: inicia com o Windows
+- Notification: notificação após limpeza
+
+Polling: intervalo de atualização (200-5000 ms)
+
+Leak Detection: limite de alerta para vazamentos (MB)
+
+Auto-Clean Threshold: limiar de memória livre para limpeza automática
+
+Clean Areas: selecione quais áreas limpar (Standby, Modified,
+Working Sets, File Cache, Combined List, Defrag)
+
+ProBalance: reduz prioridade de processos que consomem muita RAM
+
+Startup Optimization: limpeza inicial após a inicialização
+
+Scheduled Cleaning: limpeza agendada em intervalos regulares
+
+
+==============================
+12. MODO JOGO (GAME MODE)
+==============================
+
+Quando ativado, o RAMFlux detecta jogos em execução e:
+- Reduz a frequência de limpeza automática
+- Prioriza desempenho do jogo
+- Evita limpezas agressivas durante o jogo
+
+A detecção pode ser automática (tela cheia) ou por lista
+de jogos conhecidos.
+
+
+==============================
+13. PROBALANCE
+==============================
+
+O ProBalance monitora processos com alto consumo de memória.
+Quando um processo excede o limite configurado, sua prioridade
+é reduzida para BELOW_NORMAL, liberando recursos para outros
+processos. Quando o consumo do processo diminui, a prioridade
+original é restaurada.
+
+Configuração:
+- Ativar em Settings > ProBalance
+- Ajustar o limite de memória (128-4096 MB)
+
+
+==============================
+14. SOLUÇÃO DE PROBLEMAS
+==============================
+
+O RAMFlux não abre:
+- Verifique se o Visual C++ Redistributable está instalado
+- Execute como administrador para funcionalidade completa
+
+Limpeza não funciona:
+- Execute como administrador
+- Verifique se o serviço "Superfetch/SysMain" está ativo
+
+O aplicativo fecha sozinho:
+- Execute o diagnóstico em Settings > Behavior
+- Verifique o Console por mensagens de erro
+- Atualize para a versão mais recente
+
+Erro "Access Denied" ao limpar:
+- Algumas operações exigem privilégios de administrador
+- Execute o RAMFlux como administrador
+
+==============================
+© 2026 RAMFlux Technologies

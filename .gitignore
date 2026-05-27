@@ -1,0 +1,36 @@
+# Build output
+build/
+cmake-build-*/
+*.obj
+*.exe
+*.lib
+*.dll
+*.exp
+*.pdb
+*.ilk
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.user
+
+# Qt
+*.pro.user
+moc_*
+qrc_*
+ui_*
+*_autogen/
+
+# Installer
+RAMFlux_Setup_*.msi
+*.wixpdb
+*.cab
+
+# OS
+Thumbs.db
+.DS_Store
