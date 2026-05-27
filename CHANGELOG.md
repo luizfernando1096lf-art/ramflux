@@ -8,27 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
-- **High CPU usage** — process enumeration (`CreateToolhelp32Snapshot` + `OpenProcess` per process) now runs every 3 seconds instead of every second; results are cached between scans
-- **Crash: EventBus use-after-free** — callbacks now use `QPointer<MainWindow>` instead of raw `this`, preventing dangling pointer access when MainWindow is destroyed while a telemetry callback is in flight
-- **Crash: detached thread use-after-free** — `onFileCacheUpdated()` uses `QPointer` created before `std::thread` launch; thread body wrapped in `try-catch` to prevent `std::terminate` on exception; GUI update callback checks `QPointer` before accessing members
-- **UI freeze when opening external apps** — `NtApi::getTopFileCache(50)` moved to background thread (was blocking GUI thread for seconds under memory pressure)
-- **Memory Map bars not showing** — reverted `getPhysicalMemoryBreakdown()` back to GUI thread (single NT API call, <1ms)
-- **Memory Map progress bars not displaying colors** — restored synchronous execution for memory map updates
-- **PressureHigh/PressureCritical firing together** — `else if` guard added
-- **Logger callback use-after-free** — `setCallback(nullptr)` in destructor
-- **ProBalance logic** — monotonic priority comparison fixed
-- **getProcessStandbyMemory returning garbage** — returns 0 (API not available per-process)
-- **getPhysicalMemoryBreakdown returning zero** — 512-byte buffer for Win11 `NtQuerySystemInformation`
 
 ### Changed
-- **Version consistency** — all version strings (System Info, About, app metadata, log) now read from a single `Constants::APP_VERSION` source; hardcoded `"2.0.0"` and `"1.0.0"` strings replaced
-- Process list now refreshes every 3 seconds instead of every 1 second (reduces CPU usage ~3x on the telemetry thread)
-- `Version::getFullVersion()` now reads from `Constants::APP_VERSION` (single source of truth)
-- About dialog reads version from `Constants::APP_VERSION`
-- MemoryCollector: removed expensive `getTopFileCache(5)` from per-second polling loop
-- MainWindow default size: 1100×760
-- SettingsDialog: QScrollArea wrapper, reduced fonts, 520×400 min size
-- HistoryChart overlay default: "RAM Usage (GB)"
+
+---
+
+## [1.1.1] — 2026-05-27
+
+### Fixed
+- **Crash: thread detached sem join no destrutor** — `onFileCacheUpdated()` criava `std::thread` com `.detach()`, permitindo que a thread continuasse executando durante o desligamento do CRT, acessando memória destruída. Agora a thread é armazenada como membro (`m_fileCacheThread`) e unida no destrutor da MainWindow
+- **Crash: use-after-free entre QPointer e invokeMethod** — o código convertia `QPointer` em raw pointer antes de chamar `invokeMethod(raw, ...)`, criando uma janela onde a MainWindow podia ser destruída entre a leitura e o uso. Agora usa `qApp` como receiver e o `QPointer` é verificado dentro da lambda (na GUI thread)
+- **Crash: thread file cache sem proteção SEH** — access violations dentro de `getTopFileCache` podiam não ser capturados por `catch(...)` dependendo do modo de exceção do MinGW; o recuo para `std::thread` joinable com `try-catch` externo garante tratamento adequado
+
+### Changed
+- `onFileCacheUpdated()`: thread migrada de `.detach()` para `m_fileCacheThread` joinable; receiver trocado de raw pointer para `qApp`
+- Destrutor `~MainWindow()`: `m_fileCacheThread.join()` executado antes de qualquer cleanup (Logger, EventBus)
 
 ---
 
