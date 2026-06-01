@@ -31,7 +31,7 @@ RAMFlux is a modern, low-overhead memory optimization platform for Windows 10 an
 - **Profile System** — performance profiles (Balanced, Aggressive, Conservative, Game, Power Save)
 - **Privileged Helper** — separate `RAMFluxHelper.exe` process with elevated privileges for NTAPI operations
 - **System Tray** — background operation with quick actions
-- **Modern UI** — dark theme inspired by modern design principles
+- **Modern UI** — 3 themes (Catppuccin Mocha, Catppuccin Latte, Nord) com seletor no SettingsDialog e persistência
 
 ---
 
@@ -168,10 +168,13 @@ This project follows [Semantic Versioning](https://semver.org/). The current ver
 |--------|---------|
 | Latest Release | [v2.5.2](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.5.2) |
 
-### v2.5.2 Security Audit & Bugfixes
-- **3 bugs corrigidos**: CPU% sempre zero (FluxProcessAnalyzer), coldPageRatio com page size hardcoded (MemoryCollector), IO priority não restaurada (GameMode)
-- **Full code audit**: 18 source files revisados — zero memory leaks, zero buffer overflows, zero race conditions
-- **ThemeManager integration**: tema selecionável via SettingsDialog com persistência em QSettings
+### v2.5.2 — Melhorias, Auditoria e Correções
+- **ThemeManager**: 3 temas (Catppuccin Mocha/Latte, Nord) + seletor no SettingsDialog + persistência QSettings
+- **Code audit**: 18 source files revisados — zero memory leaks, zero buffer overflows, zero race conditions
+- **Bugfix CPU%**: FluxProcessAnalyzer — delta calculado antes de atualizar o sample
+- **Bugfix page size**: MemoryCollector — coldPageRatio com `SYSTEM_INFO.dwPageSize` em vez de 4096 fixo
+- **Bugfix IO priority**: FluxGameMode — salvava e restaurava o valor original via `getProcessIoPriority()`
+- **Nova API NTAPI**: `NtApi::getProcessIoPriority()` — `ProcessIoPriority` via `GetProcessInformation`
 - [Full changelog](CHANGELOG.md)
 
 See [VERSIONING.md](Docs/VERSIONING.md) for the version reference guide.
