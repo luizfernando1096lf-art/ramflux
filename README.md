@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.6.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.11.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -35,6 +35,11 @@ RAMFlux is a modern, low-overhead memory optimization platform for Windows 10 an
 - **Process Rules Engine** — persistent priority, IO priority, page priority, memory priority, and CPU affinity rules saved across sessions
 - **CPU Affinity Manager** — per-CPU checkbox grid with Select All/Clear All, accessible via Settings dialog
 - **Process Watchdog** — automatic actions on memory threshold breach: terminate, restart, set priority, log, or change affinity
+- **Process Memory Classifier** — classifies processes by usage pattern (Steady/Burst/Periodic/Leaky) with per-profile strategies
+- **Advanced Memory Compression** — StoreAPI decoder pool management and compression mode tuning
+- **Multi-level Cache Pressure** — L1/L2/L3 cache-aware pressure calculation via CPU topology detection
+- **Page File Auto-Tuning** — automatic page file resizing based on RAM + commit charge
+- **Game Mode 3.0** — DXGI video memory monitoring, 11 game profiles, VRAM-aware cleaning, 1ms competitive timer
 
 ---
 
@@ -165,11 +170,19 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.6.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.11.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.6.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.6.0) |
+| Latest Release | [v2.11.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.11.0) |
+
+### v2.11.0 — Process Memory Classifier, Advanced Compression & Multi-level Cache
+- **Process Memory Classifier (Phase 24)**: per-process pattern detection (Steady/Burst/Periodic/Leaky) com trim automático
+- **Advanced Memory Compression (Phase 23)**: StoreAPI mode tuning + decoder pool management
+- **Multi-level Cache Pressure (Phase 22)**: L1/L2/L3 cache-aware pressure calculation
+- **Page File Auto-Tuning (Phase 21)**: automatic page file sizing via NTAPI
+- **Game Mode 3.0 (Phase 20)**: DXGI video memory API, 11 game profiles, VRAM-aware cleaning, competitive mode
+- [Full changelog](CHANGELOG.md)
 
 ### v2.6.0 — Process Rules Engine, CPU Affinity Manager e Process Watchdog
 - **Persistent Process Rules Engine**: regras de prioridade (CPU, IO, page, memory), afinidade de CPU e prioridade de memória — salvas em QSettings, aplicadas automaticamente a cada 5s
