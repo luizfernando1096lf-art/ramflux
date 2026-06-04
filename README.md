@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.11.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -38,6 +38,12 @@ RAMFlux is a modern, low-overhead memory optimization platform for Windows 10 an
 - **Process Memory Classifier** — classifies processes by usage pattern (Steady/Burst/Periodic/Leaky) with per-profile strategies
 - **Advanced Memory Compression** — StoreAPI decoder pool management and compression mode tuning
 - **Multi-level Cache Pressure** — L1/L2/L3 cache-aware pressure calculation via CPU topology detection
+- **CPU Rate Limiting** — hard CPU usage cap via Windows Job Objects (JOBOBJECT_CPU_RATE_CONTROL_INFORMATION, HARD_CAP)
+- **Power Plan Automation** — dynamic switching between High Performance, Balanced, and Power Saver plans via powrprof.dll
+- **Process Suspend/Resume** — NTAPI-level process suspension via NtSuspendProcess/NtResumeProcess (dynamic ntdll.dll)
+- **Network QoS (DSCP)** — per-process network priority tagging via SetProcessInformation(ProcessNetQoSPolicy)
+- **Responsiveness Slider** — unified control (0-10) linking CPU cap, suspension, QoS, and power plan
+- **I/O Monitoring Dashboard** — real-time per-process and system-wide disk I/O rates with delta calculations
 - **Page File Auto-Tuning** — automatic page file resizing based on RAM + commit charge
 - **Game Mode 3.0** — DXGI video memory monitoring, 11 game profiles, VRAM-aware cleaning, 1ms competitive timer
 
