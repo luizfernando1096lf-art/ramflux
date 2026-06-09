@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.13.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.14.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -46,6 +46,13 @@ RAMFlux is a modern, low-overhead memory optimization platform for Windows 10 an
 - **I/O Monitoring Dashboard** — real-time per-process and system-wide disk I/O rates with delta calculations
 - **Page File Auto-Tuning** — automatic page file resizing based on RAM + commit charge
 - **Game Mode 3.0** — DXGI video memory monitoring, 11 game profiles, VRAM-aware cleaning, 1ms competitive timer
+- **Memory Heatmap** — visual treemap of process memory usage, sized and colored by Working Set
+- **Standby List Inteligente** — selective standby flush preserving critical process pages via page priority elevation
+- **NUMA Optimization** — automatic NUMA node selection and process pinning based on free memory and L3 cache contention
+- **Hard Fault Predictor 2.0** — sliding window regression predicts hard faults 30s ahead with preemptive cleaning
+- **Process Memory Firewall** — per-process memory limits via Job Objects with automatic leak detection and quarantine
+- **System File Cache Tuner** — dynamic file cache reduction during gaming/mining workloads
+- **Memory Compression Manager** — adaptive MaxPerformance/Auto mode switching and decoder pool expansion
 
 ---
 
@@ -176,11 +183,21 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.13.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.14.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.13.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.13.0) |
+| Latest Release | [v2.14.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.14.0) |
+
+### v2.14.0 — Memory Heatmap, Intelligent Standby, NUMA Pinning & More
+- **Memory Heatmap UI** — new tab with treemap visualization of process memory: blocks sized by Working Set, colored by RAM ratio, with foreground highlighting and live tooltips
+- **Standby List Inteligente** — selective standby flush preserving critical process pages via page priority elevation; continuous orchestration tied to hard fault prediction
+- **NUMA Optimization** — automatic best-NUMA-node selection (most free memory, penalized for L3 contention); pins game/miner processes to all cores on the node
+- **Hard Fault Predictor 2.0** — 30-sample sliding window with linear regression; predicts hard faults 30s ahead; triggers preemptive cleaning on warning/critical states
+- **Process Memory Firewall** — per-process memory limits via Job Objects; automatic leak detection (200MB growth over 10 samples); quarantine with CPU throttle + kill-on-violation
+- **System File Cache Tuner** — dynamic file cache reduction to 128MB (gaming) / 64MB (mining) with automatic restore on exit
+- **Memory Compression Manager** — proactive MaxPerformance mode during gaming/mining; decoder pool auto-expansion; periodic savings logging
+- [Full changelog](CHANGELOG.md)
 
 ### v2.13.0 — Security Audit, Bug Fixes & Robustness
 - **Security Audit**: 13 critical/high/medium fixes across 12 files — restricted helper DACL, client session verification, removed `/rl highest` from scheduled task, crash dump hardening, CLI bounds checking
