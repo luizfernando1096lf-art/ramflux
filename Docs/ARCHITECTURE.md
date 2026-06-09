@@ -474,8 +474,6 @@ Dynamic system file cache management:
   - Minimum and maximum file cache in bytes
   - Requires `SE_INCREASE_QUOTA_NAME` privilege (enabled via `adjustPrivilege`)
 - `NtApi::getSystemFileCacheLimits()` — returns current `min`/`max` file cache limits via `NtQuerySystemInformation(SystemFileCacheInformation)`
-- `NtApi::getFileCacheUsage()` — returns current file cache size in bytes (from `MemorySnapshot.cachedMemory`)
-
 **Integration:**
 - **Game Mode**: `FluxGameMode::applyGameOptimizations()` saves current limits, then sets `FC_GAME_CACHE_LIMIT_BYTES` (128MB); `restoreNormalOptimizations()` restores original values
 - **Mining Mode**: similar, but uses `FC_MINING_CACHE_LIMIT_BYTES` (64MB)

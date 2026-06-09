@@ -550,6 +550,29 @@ A systematic rework to prevent disk thrashing caused by aggressive memory cache 
 
 ---
 
+# PHASE 28 — CRASH DEBUG & STABILITY FIX (v2.14.0)
+
+**Bug:** SettingsDialog crash ao clicar Save — `strlen(NULL)` em `ucrtbase.dll` chamado de `ProfileManager::setProfile()`.
+
+**Debug methodology:**
+- Minidump analysis via `dbgeng.h` + custom parser (`C:\RAMFlux\RAMFlux_crash.dmp`)
+- Identified exception: `0xC0000005` (ACCESS_VIOLATION) reading address `0x0`
+- Crash at `ucrtbase.dll!strlen+0x31` — `mov rdx,[rax]` with `RAX=0` → `RCX=0` (NULL string argument)
+- Return address traced via stack: `RAMFlux.exe+0x71216` → `ProfileManager::setProfile+0x96`
+- `addr2line` + `nm -C` confirmou função exata
+- Disassembly (`objdump -d`) revelou: `mov (%rax,%rdx,8),%r13` carregando `ProfileNames[rdx]` onde `rdx=sign-extend(profile)`
+- `ProfileNames` array localizado em `.rdata` via `readelf`; 8 bytes antes do array são zero (NULL ptr)
+- Causa raiz: `currentIndex()` retornando -1 → `static_cast<ProfileType>(-1)` → `ProfileNames[-1]` → `NULL` → `strlen(NULL)`
+
+**Fix aplicado em 3 arquivos:**
+1. `src/profiles/ProfileManager.cpp:22` — bounds check em `setProfile()`: `pidx<0||pidx>5` → default p/ Balanced (1)
+2. `src/ui/SettingsDialog.cpp:257` — bounds check em `saveSettings()` + handler aceita idx=5 (Custom estava excluído)
+3. `src/ui/MainWindow.cpp:775,335-340` — bounds check em `onProfileChanged()` + item "Mining" adicionado ao Dashboard combo (estava faltando, causando mismatch com sistema de 6 perfis)
+
+**Build:** MinGW 13.1.0, Qt 6.8.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:

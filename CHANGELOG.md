@@ -25,6 +25,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - **NUMA affinity pinning**: `setProcessNumaAffinityByNode()` now correctly uses `getNumaNodeCpuMask()` to pin to ALL cores on the target node, not just 1 core
+- **Settings crash (strlen(NULL) em ProfileManager)**: crash ao clicar Save no SettingsDialog — `ProfileNames[profile]` acessava fora dos limites do array quando `QComboBox::currentIndex()` retornava -1, lendo NULL da memória anterior ao array e causando `strlen(NULL)` em `ucrtbase.dll`. Adicionada validação de bounds em `ProfileManager::setProfile()`, `SettingsDialog::saveSettings()` e `MainWindow::onProfileChanged()`. Adicionado item "Mining" faltante no Dashboard combo. Fix aplicado via análise de minidump (`C:\RAMFlux\RAMFlux_crash.dmp`)
+- **Security audit fixes**: 19 fixes across multiple components:
+  - **Privilege leak (C-1)**: `enablePrivilege()` refactored to RAII `ScopedPrivilege` class; 13 call sites updated; prevents permanent privilege elevation
+  - **TOCTOU in revertAppliedRule (C-2)**: `AppliedRule::processName` added + `verifyProcessName()` check before restoring process state
+  - **namedPipe timeout (C-3)**: `ReadFile` in `HelperClient.cpp` uses `OVERLAPPED` with 5-second timeout; prevents infinite wait on unresponsive helper
+  - **Installer version (C-4)**: `installer.wxs` path updated from `build\deploy\` to `build2\deploy\`
+  - **Version mismatch (C-5)**: `helper.rc`, `helper.manifest`, `app.manifest` synced to `2.14.0.0`
+  - **HardFault math (C-6)**: `HardFaultPredictor::currentFaultsPerSec` uses delta time (`GetTickCount64`) instead of hardcoded `/60`
+  - **File cache restore (C-7)**: Save/restore file cache limits on critical HF exit via `m_hfCriticalActive`
+  - **Crash handler helper (C-8)**: `SetUnhandledExceptionFilter` + `MiniDumpWriteDump` with `dbghelp.h` added to `RAMFluxHelper`
+  - **MAX_PATH truncation (C-9)**: `HelperClient.cpp` now detects truncation (`len >= MAX_PATH`) instead of silent overflow
+  - **Exempt PID leak (C-10)**: `clearExemptPids()` called every scheduler cycle; `isMiningRunning()` prevents stale exempt PIDs
+  - **sampleCount real (C-11)**: `HardFaultReport::sampleCount` reports `hist.samples.size()` instead of hardcoded 30
+  - **>64 CPU groups (C-12)**: `getNumaNodeCpuMask()` enumerates all processor groups via `GetActiveProcessorGroupCount() + GetProcessorAffinity`
+  - **Global mutex SD (C-13)**: `RAMFluxHelper.cpp` creates global mutex with `SECURITY_ATTRIBUTES` restricting to `SYSTEM + Administrators`
+  - **Unchecked returns (C-14)**: `trimProcessWorkingSet()` and `setProcessMemoryLimit()` return values now checked for failure
+  - **VRAM fallback (C-15)**: Uses `GlobalMemoryStatusEx` system memory pressure instead of hardcoded 60% when DXGI unavailable
+  - **build.ps1 fixes (C-16)**: Generator changed to `MinGW Makefiles`; paths updated from `Release\` to `build\`
+  - **CMakeLists.txt fixes (C-17)**: MSVC library linking removed for MinGW; `dbghelp` added for helper crash handler
+  - **Dead code removed (C-18)**: `enableDebugPrivilege()` removed (replaced by `ScopedPrivilege`)
+  - **Scheduler interval (C-19)**: `connectToHelper()` moved before scheduler start to prevent race on first cycle
 
 ## [2.13.0] — 2026-06-05
 
