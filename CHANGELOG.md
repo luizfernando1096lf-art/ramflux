@@ -1,0 +1,371 @@
+# Changelog
+
+All notable changes to RAMFlux are documented here.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [2.14.0] — 2026-06-08
+
+### Added
+- **Memory Heatmap UI** — new "Heatmap" tab with treemap visualization of process memory: blocks sized by Working Set (sqrt-proportional), colored by RAM ratio (green→yellow→orange→pink), foreground process highlighting (pink border), live tooltips with PID/WS/CPU%/threads
+- **Standby List Inteligente** — `NtApi::selectiveStandbyClean(maxPriority)` elevates page priority of critical processes (foreground, >500MB WS) before standby flush; `standbyPriorityDistribution()` for diagnostics; continuous orchestration in FluxScheduler every 30s
+- **NUMA Optimization 2.0** — `NtApi::getBestNumaNodeForWorkload()` selects NUMA node with most free memory, penalized for L3 cache contention (>4 processes sharing L3); `pinProcessToBestNumaNode(pid)` pins to ALL cores on the node; game/miner auto-pinning in GameMode/MiningMode
+- **Hard Fault Predictor 2.0** — 30-sample sliding window (`HardFaultHistory` deque + mutex) with linear regression; `predictFuture(30s)` predicts hard fault score 30s ahead; `estimatedTimeToThrashingSec` and `confidence` fields; preemptive deepClean (critical) / selectiveClean (warning) in scheduler
+- **Process Memory Firewall** — `NtApi::setProcessMemoryLimit(pid, maxBytes, killOnViolation)` via `JOB_OBJECT_LIMIT_PROCESS_MEMORY`; 10-sample WS history detects >200MB growth → auto-limit; `quarantineMemoryLeak()` with CPU throttle + kill-on-violation; `releaseProcessMemoryLimit()` for cleanup
+- **System File Cache Tuner** — `NtApi::setSystemFileCacheSize(min, max)` via `NtSetSystemInformation(SystemFileCacheInformation)`; reduces to 128MB (gaming) / 64MB (mining); original values saved and restored on mode exit
+- **Memory Compression Manager** — proactive MaxPerformance mode during gaming/mining; decoder pool auto-expansion (256 pages on low hit rate, 128 pages on healthy+high hit rate); periodic savings logging
+
+### Changed
+- **GameMode**: now applies NUMA pinning, file cache reduction, compression MaxPerformance, and selective standby cleaning
+- **MiningMode**: new in v2.14.0 — applies NUMA pinning, aggressive file cache reduction (64MB), and process memory firewall limits
+- **FluxScheduler**: 6 new apply* methods in scheduler loop — `applyAdvancedCompressionTuning`, `applyPredictiveHardFaultManagement`, `applyProcessMemoryFirewall`, `applyStandbyOrchestration`, `applyFileCacheTuning`; each with configurable enable/disable, interval, and logging
+- **FluxNTAPI**: ~20 new functions across 4 feature areas; includes `#include <deque>` for hard fault history; manual `JOB_OBJECT_LIMIT_*` defines for MinGW compatibility
+- **Constants.h**: ~20 new constants for standby list (SL_*), file cache (FC_*), and feature tuning intervals
+
+### Fixed
+- **NUMA affinity pinning**: `setProcessNumaAffinityByNode()` now correctly uses `getNumaNodeCpuMask()` to pin to ALL cores on the target node, not just 1 core
+
+## [2.13.0] — 2026-06-05
+
+### Security
+- **Named Pipe Hardening (SV-1/SV-2/SV-3)** — RAMFluxHelper.cpp:
+  - Pipe DACL restricted from `WD` (Everyone) to `D:(A;;GA;;;SY)(A;;GA;;;BA)` — only SYSTEM + Administrators may connect
+  - New `verifyClient()` method: validates connecting client via `GetNamedPipeClientProcessId` + `ProcessIdToSessionId`, rejecting cross-session connections
+  - Removed `/rl highest` flag from scheduled task registration (AVG/Defender false-positive trigger)
+- **Crash Dump Hardening (SV-4/SV-5)** — main.cpp:
+  - Dump file created with `FILE_ATTRIBUTE_SYSTEM` to reduce accidental exposure of sensitive memory contents
+  - `MiniDumpWithIndirectlyReferencedMemory` flag set for richer diagnostics without raw pointer disclosure
+  - CLI `--dump_duration` bounded to 5–600s (was unbounded)
+
+### Fixed
+- **Handle leak in CpuLimiter (B-2)** — `CloseHandle(oldJob)` before overwriting `m_hJob` with new job object
+- **Stale resume in ProcessSuspender (B-4)** — `isProcessRunning()` guard before `NtResumeProcess` on dead processes
+- **CPU percent sanity cap (B-5)** — MemoryCollector caps CPU% at 10000%; above that returns 0 (race on first sample)
+- **TOCTOU in NTAPI (B-6)** — `getTcpCounts()`/`getUdpCounts()` retry loop up to 3 attempts on `ERROR_INSUFFICIENT_BUFFER`
+- **LeakHunter iteration limit (B-7)** — `maxRegions = 100000` cap and stall-address guard in `scanHeapRegions()`
+- **HeuristicEngine data race (B-9)** — `tuneFromMetrics()` now called under `lock_guard` in `adjustModuleParams()`; removed unprotected call from `evaluateAndPost()`
+- **ResponsivenessSlider data race (B-10)** — `int m_level` → `std::atomic<int>` for lock-free read in `getLevel()`
+- **BenchmarkRunner crash (B-14)** — `if(m_cancelled) return` check at top of `runOptimization()`
+- **HelperClient connect retry (B-15)** — `connectPipe()` retries up to 3×200ms on `ERROR_PIPE_BUSY`
+
+### Changed
+- Version bumped from 2.12.0 to 2.13.0 (patch + security release)
+- Manuais updated (EN/PT) with security notes
+- README updated with v2.13.0 changelog
+
+## [2.11.0] — 2026-06-02
+
+### Added
+- **Process Memory Classifier (Phase 24)** — classify processes by memory usage pattern
+  - `FluxClassifier` module (IModule) with per-process WS history tracking (deque 60 samples)
+  - `ProcessMemoryProfile` enum: Unknown, Steady, Burst, Periodic, Leaky
+  - `ProcessClassification` struct: profile, confidence, mean/stddev WS, growth rate, peak/mean ratio
+  - `classifyPattern()` — 4-pattern detection: leaky (growth >50MB/min), burst (peak/mean >2x), periodic (zero-crossings ≥3), steady (CV <0.15)
+  - `applyProcessClassification()` in FluxScheduler — 30s interval, feeds ProcessCache into classifier, trims leaky/burst processes with WS >500MB
+  - Registered in ModuleManager + main.cpp
+  - CMakeLists.txt updated with classifier sources
+  - Constants: CL_MIN_WS_TRACK_BYTES, CL_LEAKY_GROWTH_THRESHOLD_MBPM, CL_BURST_PEAK_MEAN_RATIO, et al.
+
+## [2.10.0] — 2026-06-02
+
+### Added
+- **Multi-level Cache Pressure (Phase 22)** — L1/L2/L3 cache-aware pressure calculation
+  - `getCacheTopology()` — queries CPU cache sizes via `GetLogicalProcessorInformationEx` (RelationCache)
+  - `getCachePressure()` — estimates per-level pressure based on active WS / cache size ratios
+  - `CacheTopology` struct: l1/l2/l3 sizes, associativity, line size, cores, logical processors, sockets
+  - `CachePressureInfo` struct: per-level pressure (0-1), overall score, L3 contention flag
+  - Integrated into `FluxOptimizer::calculatePressureScore()` with 5% weight + 10pt L3 contention bonus
+  - Constants: CP_CACHE_SCORE_WEIGHT, CP_L3_CONTENDED_BONUS, CP_L3/L2/L1_WEIGHT
+- **Advanced Memory Compression (Phase 23)** — StoreAPI mode tuning & decoder pool management
+  - `getStoreDecoderPoolInfo()` — query StoreAPI decoder pool (current/max pages, hit rate, allocation)
+  - `setStoreDecoderPoolSize()` — expand decoder pool when hit rate is low during gaming
+  - `setCompressionStoreMode()` — switch between Auto/MaxCompression/MaxPerformance modes
+  - `getAdvancedCompressionInfo()` — aggregates compression ratio, decoder pool health, current mode
+  - `FluxScheduler::applyAdvancedCompressionTuning()` — 60s interval, switches to MaxPerformance when harmful, expands pool during games with low hit rate
+  - `FluxOptimizer::calculatePressureScore()` — +5ps when hit rate <30% and >1GB compressed
+  - Constants: AC_POOL_LOW_HIT_RATE, AC_HARMFUL_RATIO_THRESHOLD, AC_DECODER_POOL_EXPAND_STEP, et al.
+
+## [2.8.0] — 2026-06-02
+
+### Added
+- **Page File Auto-Tuning (Phase 21)** — automatic page file sizing via NTAPI
+  - `getPageFileInfo()` queries all page files via NtQuerySystemInformation(SystemPageFileInformation)
+  - `getPageFileRecommendation()` calculates optimal size from RAM + commit charge history
+  - `setPageFileSize()` resizes via NtSetSystemInformation with SE_CREATE_PAGEFILE_NAME privilege
+  - `applyPageFileTuning()` in FluxScheduler monitors pressure, triggers clean at 80%, resize at 90%
+  - Constants: PF_TUNING_INTERVAL_MS, PF_RESIZE_PRESSURE_THRESHOLD, PF_CLEAN_PRESSURE_THRESHOLD, etc.
+  - Suppressed during battery boost, 2-minute check interval
+- Version bump 2.7.0 → 2.8.0
+
+## [2.7.0] — 2026-06-02
+
+### Added
+- **Auto-tuning Engine** — `HeuristicEngine` agora trackeia acurácia das predições de pressão e ajusta dinamicamente `FluxCleaner::setCooldownMs()` e `FluxScheduler::setIntervalMs()` via feedback loop. `storePrediction()` armazena predições 30/60/120s, `evaluatePredictionAccuracy()` compara com valor real após horizonte expirar. `tuneFromMetrics()` mapeia acurácia em parâmetros: ≥80% → agressivo (cooldown 20s, intervalo 3s), <45% → conservador (60s, 12s). FP/FN ajustam confidence threshold. Pressão em alta reduz intervalo, anomalias severas forçam cooldown mínimo. Logging de cada ajuste.
+- **HardFaultPredictor 2.0** — substitui o threshold binário antigo (3 ifs com constantes fixas) por preditor baseado em regressão linear. `HardFaultSample` com deque de 60 amostras (2 min), `computeSlope()` por ponteiro-para-membro, `evaluate()` calcula severityScore 0-100 ponderado (faults 40pts + trend 25pts + disk queue 20pts + standby 15pts). 5 níveis de severidade: None, Low (≥15), Medium (≥30), High (≥50), Critical (≥70). Storm warning dispara apenas quando severo + rising + low cache, com cooldown de 30s no log. Predição de faults em 30s via projeção linear.
+- **Effectiveness Metrics** — `EffectivenessMetrics` com acurácia geral, acurácia recente (últimas 20), mean error, total/correct predictions, FP/FN. `TuningParams` com recommendedCooldownMs/IntervalMs/confidenceThreshold/aggressiveFactor. Exposto via `currentEffectiveness()` e `currentTuning()`.
+- **PreemptiveConfidence** — `FluxOptimizer::calculatePressureScore()` agora integra AI prediction boost contínuo (`predictedPressure60s * predictionConfidence * 0.35`, cap 25pts), substituindo o trigger binário do HeuristicEngine no Scheduler. A IA agora influencia o pressure score gradualmente em vez de um override abrupto.
+- **Game Mode 3.0 — DirectX Integration**:
+  - **DXGI Video Memory API** — `NtApi::getVideoMemoryInfo()` querya VRAM total/dedicada/compartilhada + budget/usage atual via `IDXGIFactory1` + `IDXGIAdapter3::QueryVideoMemoryInfo`. `NtApi::getGameMemoryPressure()` combina VRAM pressure + system memory pressure em score único, detecta throttling (VRAM usage > budget). Carregamento dinâmico da dxgi.dll (sem linking obrigatório, fallback silencioso).
+  - **Game-Specific Profiles** — 11 perfis pré-definidos (CS2, Valorant, Fortnite, CoD, Cyberpunk, Elden Ring, Dota 2, League, Overwatch 2, Apex, Warzone) com VRAM mínima, RAM recomendada, CPU/IO/page priority por jogo, flags competitive/disableProBalance/disableWsTrim/disableCompressionTuning.
+  - **Pre-Game Memory Preparation** — `FluxCleaner::prepareForGame()` executa standby clean + modified clean + trim de processos >200MB inativos >30s antes de aplicar otimizações, maximizando RAM disponível.
+  - **VRAM-Aware Cleaning During Gameplay** — `FluxGameMode::applyVramMonitor()` monitora VRAM a cada ~4s durante o jogo. Acima de 85%: standby clean se >256MB. Acima de 95% ou throttling: standby clean forçado. Histórico de 30 amostras.
+  - **Competitive Mode** — timer resolution de 1ms (`SetWaitableTimerEx`), supressão de ProBalance/WS trim/compression tuning conforme perfil. Restaura timer para 15ms ao sair.
+- **NTAPI/Kernel Expansion (5 features)**:
+  - **NUMA Node Awareness v2** — `getProcessNumaNode(pid)` retorna o nó NUMA onde o processo executa via `GetProcessInformation(ProcessProcessorNumber)`. `setProcessNumaAffinityByNode(pid, node)` move o processo para um nó específico via `SetProcessGroupAffinity`. `getPreferredNumaForProcess(pid)` retorna node atual + memória disponível no nó. `FluxScheduler::applyNumaOptimization()` redistribui processos com WS >512MB entre nós quando o desbalanceamento de memória supera 20%, movendo processos do nó mais pressionado para o nó mais livre.
+  - **Page Priority / Superfetch Integration** — `getSysMainServiceState()` consulta o serviço SysMain (Superfetch) via SCM API (OpenSCManager/OpenService/QueryServiceStatusEx), retornando running state, PID e startup type. `setSysMainServiceEnabled()` inicia/para o serviço. `FluxScheduler::applyPagePriorityOrchestration()` estendida para considerar o estado do SysMain na estratégia de prioridades de página.
+  - **Memory Compression Tuning** — `getCompressionEfficiency()` computa ratio real (uncompressed/compressed), GB compressed vs uncompressed, harmful flag (<1.2x), savingsPercent. `getCompressionStoreInfo()` detalha páginas totais/compactadas/descompactadas e average compression ratio do store. `FluxScheduler::applyCompressionTuning()` monitora continuamente a eficiência; após 3+ amostras consecutivas com ratio <1.2x, loga alerta sugerindo desabilitar Memory Compression. Restaura aviso quando eficiência retorna.
+  - **Hard Fault Prediction (NTAPI level)** — `getHardFaultPrediction()` agrega page faults dos processos + standby list size + disk queue length em score 0-100 (faults 40pts + disk queue 25pts + standby 20pts + trend 15pts). Não substitui o `HardFaultPredictor` do HeuristicEngine (que opera com 60 amostras e regressão linear), mas serve como quick-check síncrono para outras partes do sistema.
+  - **Working Set Aging** — `getProcessWsAge(pid)` retorna segundos desde a última alteração significativa (>5MB) do working set. `trimIdleProcesses(thresholdBytes, idleSeconds)` faz trim apenas de processos com WS > threshold e inativos há N segundos. `FluxScheduler::applyWsAgingTrim()` executa a cada 30s (configurável via `setWsAgingIdleSeconds()`/`setWsAgingThresholdBytes()`), trimando processos ociosos com >100MB WS.
+
+### Changed
+- `HeuristicReport` estendido com `EffectivenessMetrics effectiveness`, `TuningParams tuning`, `HardFaultPrediction hardFault`
+- **FluxOptimizer::calculatePressureScore()** — removido o trigger binário do HeuristicEngine no Scheduler; a decisão agora flui naturalmente pelo pressure score boostado no Optimizer
+- **FluxScheduler::schedulerLoop()** — adicionadas 3 novas chamadas: `applyNumaOptimization()`, `applyWsAgingTrim()`, `applyCompressionTuning()`
+- **FluxGameMode** — reescrito para Game Mode 3.0: `GameProfile` struct com 11 perfis, `VramSample` tracking, `applyVramMonitor()` para limpeza VRAM-aware, `setCompetitiveModeEnabled()`/`setVramAwareCleaningEnabled()`, pre-game memory preparation via `FluxCleaner::prepareForGame()`
+- **FluxCleaner** — novo método `prepareForGame()` para limpeza agressiva pré-jogo
+- **FluxNTAPI.h** — adicionadas 12 novas structs (`ProcessNumaInfo`, `SysMainState`, `HardFaultPrediction`, `CompressionEfficiency`, `CompressionStoreInfo`, `VideoMemoryInfo`, `GameMemoryPressure`) e 16 novas funções (mais `getVideoMemoryInfo`, `getGameMemoryPressure`, `setTimerResolution`)
+- Version bumped from 2.6.0 to 2.7.0
+- Docs atualizados (PHASES.md, CHANGELOG.md, ARCHITECTURE.md)
+
+## [2.5.2] — 2026-06-01
+
+### Added
+- **ThemeManager com 3 temas** — Novo `ThemeManager` singleton gerando QSS global para os temas Catppuccin Mocha (dark), Catppuccin Latte (light) e Nord (dark blue). `applyTo()` permite reestilização em runtime sem restart.
+- **Seletor de temas no SettingsDialog** — Novo grupo "Appearance" com `QComboBox` populado via `ThemeManager::themeCount()`/`themeName()`. Tema salvo em QSettings e aplicado automaticamente no startup e ao salvar configurações.
+- **Code audit completo** — 18 arquivos fonte revisados: verificação de segurança (injeção, buffer overflow, race conditions), null pointers, resource leaks e conformidade com boas práticas C++20/Qt6.
+
+### Fixed
+- **FluxProcessAnalyzer: CPU% sempre zero** — `calculateCpuUsage()` atualizava `it->second` antes de calcular o delta, causando `totalDelta = 0` permanente. Cálculo movido para antes da atualização do sample.
+- **MemoryCollector: page size hardcoded** — `coldPageRatio` usava 4096 fixo em vez de `SYSTEM_INFO.dwPageSize`, causando erro em ARM64/PAE. Corrigido com `GetSystemInfo` dinâmico.
+- **FluxGameMode: IO priority nunca restaurada** — `applyGameOptimizations()` rebaixava I/O priority para LOW mas nunca salvava o valor original. Adicionada função `getProcessIoPriority()` em `FluxNTAPI` + captura do estado original antes da modificação.
+
+### Changed
+- Version bumped from 2.5.1 to 2.5.2 (patch release)
+- README updated with v2.5.2 changelog
+- Manuals updated (EN/PT) with new version
+- CMakeLists.txt: `ThemeManager.cpp` adicionado aos `UI_SOURCES`
+
+## [2.5.1] — 2026-06-01
+
+### Fixed
+- **Logger::rotateLog() command injection** — `std::system(powershell ...)` substituído por `fs::rename`/`fs::remove` seguro, eliminando vetor de injeção via single-quote no path do log
+- **ConsoleWidget callback use-after-free** — callback agora captura `QPointer<MainWindow>` em vez de raw `this`, e usa `qApp` como receiver do `invokeMethod`
+- **MainWindow.h includes duplicados** — removidas 6 linhas duplicadas de `QLabel`, `QPushButton`, `QComboBox`, `QProgressBar`, `QVector`
+- **ProcessCache/FluxNTAPI/FluxProcessAnalyzer: `pmc.cb` não inicializado** — `PROCESS_MEMORY_COUNTERS_EX.cb` agora é setado antes de chamar `GetProcessMemoryInfo` (6 call sites)
+- **FluxProcessAnalyzer: overflow aritmético no CPU%** — delta de tempo absoluto convertido para `int64_t` com proteção contra wrap-around
+- **RAMFluxHelper: `wsprintfW` em buffer fixo** — 3 call sites migrados para `StringCchPrintfW` segura (com overflow detection)
+- **RAMFluxHelper: Named pipe sem fallback de SD** — se `createPipeSecurity()` falha, usa SD restritivo `D:(A;;GA;;;WD)` como fallback
+
+### Changed
+- **NTAPI magic numbers → named constants** — `SystemMemoryListInformation`, `SystemFileCacheInformation`, `SystemCacheInformation`, `SystemPagedPoolInformation`, `SystemMemoryCompressionInformation`, `ProcessPagePriority` definidos como `inline constexpr` em `FluxNTAPI.cpp`
+- **Benchmark printf → Logger** — Summary do benchmark substituído de `printf` para `Logger::instance().info()`
+- **Logger: callback chamada fora do mutex** — `m_callback` é copiada e invocada após liberar `m_mutex`, eliminando deadlock por reentrância
+- **HistoryBuffer: thread-safe + retorno por valor** — `add()`/`latest()`/`clear()` protegidos por `std::mutex`; `latest()` retorna `MemorySnapshot` por valor em vez de `const&`
+
+### Added
+- **cpuPercent tracking** — `MemoryCollector::computeProcessCpuPercent(pid)` usa `GetProcessTimes` com two-sample delta para popular `ProcessMemoryBreakdown::cpuPercent`. Histórico com cleanup automático (>500 PIDs)
+- **HelperClient: `strsafe.h`** — `StringCchPrintfW`/`StringCchCopyW` substituem `wsprintfW`/`wcscpy` para segurança de buffer
+- **Compression-Aware Pressure Scoring** — `FluxOptimizer::calculatePressureScore()` agora detecta compressão ineficiente (< 1.2x) e adiciona penalidade proporcional de até 20 pontos, forçando limpeza preventiva quando o engine de compressão está sobrecarregado
+- **Page Priority Orchestration** — `FluxScheduler::applyPagePriorityOrchestration()` monitora a taxa de compressão e automaticamente reduz a prioridade de página (`PAGE_PRIORITY_LOW`/`BELOW_NORMAL`) de processos com working set elevado quando a compressão está ineficiente por 2+ amostras consecutivas. Prioridades são restauradas quando a eficiência retorna ao normal
+- **Cold Page Detection & Trim** — `ProcessCache` agora captura snapshots de working set via `QueryWorkingSetEx` a cada ciclo de detalhamento. Páginas compartilhadas presentes em snapshots consecutivos são classificadas como **cold pages**. `FluxCleaner::trimColdPages()` só faz trim de processos com >30% de cold pages e >30s de idade, eliminando stutter causado por trim cego. Integrado em `adaptiveClean()` e `deepClean()`
+- **LeakHunter Heap Analysis** — `LeakHunter::scanHeapRegions()` usa `VirtualQueryEx` para escanear o espaço de endereço de processos suspeitos, contando regiões `MEM_PRIVATE|MEM_COMMIT` e totalizando bytes comprometidos. `analyzeProcess()` agora também coleta `PrivateUsage` via `PROCESS_MEMORY_COUNTERS_EX` e calcula `computeAcceleration()` (taxa de crescimento entre amostras recentes vs antigas). A detecção combina 4 heurísticas: (1) crescimento de WS >50 MB + >20%, (2) crescimento privado >30 MB + aceleração >1.2x, (3) fragmentação (>1000 regiões heap) + crescimento privado, (4) crescimento privado desproporcional ao WS (>2x). `LeakReport` estendido com `heapCommittedBytes`, `heapRegionCount`, `privateGrowthBytes`, `accelFactor`, `heapAllocBase`, `privatePeak`
+- **Predictive Engine Multi-Horizonte** — `PressurePredictor::predict()` agora computa slopes separados para curto (6 amostras ≈60s), médio (30 ≈5min) e longo prazo (todas), com blending adaptativo conforme o horizonte de predição. Adicionado R² (coeficiente de determinação) como medida de qualidade do ajuste. Confiança calculada como `R² × horizonDecay × sampleCount`. Novos campos em `PredictionResult`: `predictedFreeGB`, `predictedHardFaults`, `shortTermSlope`, `mediumTermSlope`, `rSquared`. `detectAnomaly()` agora analisa 3 métricas (pressure, freeRam, hardFaults) e retorna a anomalia mais significativa com nome da métrica em `AnomalyResult::metricName`
+- **LeakHunter na UI** — Aba "Leak Hunter" agora exibe tabela com 9 colunas: PID, Process, WS Growth, Private Growth, Accel, Heap Regions, Heap Committed, WS Peak, Status. Atualização automática a cada 5s. Status com 4 classificações: PRIVATE LEAK (vermelho, crescimento privado 2x > WS), ACCELERATING (vermelho, aceleração >1.5x), WATCHING (amarelo, aceleração >1.2x), FRAGMENTED (amarelo, >1000 regiões heap). Barra de info mostra total de leaks ativos e memória desperdiçada. Controles: Refresh manual e toggle enable/disable
+- **Cold Page Ratio na Dashboard** — `ProcessMemoryBreakdown` estendido com `coldPageBytes` e `coldPageRatio`; populado via `MemoryCollector` a partir dos dados do `ProcessCache`. `ProcessListWidget` ganhou coluna "Cold Pages" com formatação "X MB (Y%)" e destaque amarelo se ratio >30%. Detalhes do processo (double-click) também exibem cold pages quando disponíveis
+- **Game Mode 2.0 (Memory QoS)** — `FluxGameMode` agora rastreia o PID do jogo detectado e aplica otimizações ativas: (1) **Game boost** — página priority `NORMAL`, CPU priority `ABOVE_NORMAL`, I/O priority `HIGH` no processo do jogo; (2) **Background throttle** — processos não-jogo com WS >50 MB têm página priority rebaixada para `VERY_LOW`/`LOW` (conforme WS), CPU priority para `BELOW_NORMAL`, I/O priority para `LOW`. Todos os estados originais são restaurados quando o jogo termina via `restoreNormalOptimizations()`. `FluxScheduler::applyProBalance()` e `applyPagePriorityOrchestration()` agora ignoram o PID do jogo, evitando interferência. Novos métodos: `currentGamePid()`, `setGameOptimizationsEnabled()`, `isGameOptimizationsEnabled()`
+
+## [2.5.0] — 2026-05-31
+
+### Added
+- **BenchmarkRunner** — scientific benchmarking system built into RAMFlux with multi-phase methodology (warmup/baseline/pressure/optimization/post-opt), 18+ metrics collected at 1s intervals, and full statistical analysis (mean, median, σ, percentiles)
+- **CLI flag `--benchmark`** — runs controlled benchmark from command line with configurable phase durations
+- **Tri-format reports** — CSV raw data, JSON statistical summary, Markdown scientific report with methodology documentation
+- **Efficiency Score** — composite metric (0–100) combining free memory improvement, standby reduction, hard fault impact, and pressure reduction
+
+### Changed
+- Version bumped from 2.4.0 to 2.5.0 (minor feature release)
+- README updated with benchmark methodology and real results
+- Manuals updated (EN/PT) with new version
+
+## [2.4.0] — 2026-05-30
+
+### Added
+- **ProcessCache** — singleton thread-safe cache de processos com agregação por sessão (`SessionInfo`), rastreamento de delta de working set (`wsDelta`, `lastWsChangeTime`), e lookup por nome/PID. Ciclo de detalhamento a cada 3 atualizações para reduzir overhead.
+- **FluxProcessAnalyzer** — novo módulo `IModule` para análise de processos: top-N por memória, detecção de vazamentos (>500 MB), amostragem de CPU via `GetProcessTimes` com two-sample delta, e trim de working set individual.
+- **Logger avançado** — rotação automática de logs com `setMaxLogSize()`/`setMaxBackupFiles()`/`setCompressBackups()`, compressão GZip em thread destacada, callback channel para consumo externo (ConsoleWidget), timestamps com precisão de milissegundos.
+- **EventBus com dispatch thread** — fila de trabalho assíncrona (`m_workQueue`), thread dedicada com condition variable, assinaturas curinga (`subscribeWildcard` com suporte a prefixo/sufixo/glob), `start()`/`stop()` lifecycle.
+- **FluxTelemetry + MemoryCollector + MemorySnapshot** — subsistema completo de telemetria: coleta periódica event-driven com `CreateMemoryResourceNotification`, polling adaptativo (1s/2s/5s conforme pressão), snapshot com 30+ campos (RAM, page file, NUMA, CPU, disk queue, compressão, hard faults), ring buffer de histórico (3600 amostras), postagem de eventos `MemoryUpdated`/`PressureHigh`/`PressureCritical`.
+- **ProfileManager** — novo módulo com 5 perfis (Economy, Balanced, Performance, Gaming, Custom) que reconfiguram dinamicamente Telemetry, Scheduler, Cleaner, LeakHunter, GameMode e Optimizer. Callback de troca de perfil posta `EventType::ProfileChanged`.
+- **ProBalance** — gerenciamento dinâmico de prioridades: processos com working set > 512 MB em NORMAL/ABOVE_NORMAL/HIGH são rebaixados para BELOW_NORMAL. Prioridades originais restauradas quando o processo libera memória ou ProBalance é desligado.
+- **Battery Awareness** — monitoramento de bateria via `SYSTEM_POWER_STATUS`, modo low-power automático ao desconectar AC (polling estendido, supressão de defrag/file cache, battery boost no scheduler), indicadores coloridos na status bar (verde AC, amarelo carregando, laranja baixo, vermelho crítico).
+- **RAMFluxHelper (Processo Elevado)** — novo executável separado que sobe como servidor de pipe nomeado com `runas` (UAC), executando operações privilegiadas (standby, modified, working set, file cache, combined, trim) com `NtSetSystemInformation`. Singleton via mutex, criação automática de scheduled task no logon.
+- **HelperClient** — comunicação com o helper via pipe nomeado (`\\.\pipe\RAMFluxHelper`): `sendCommand()`, `trimProcess(pid)`, `launchHelper()` com `ShellExecuteExW`, detecção de health via mutex.
+- **Crash Handling** — `SetUnhandledExceptionFilter` com geração de minidumps (`MiniDumpWriteDump`) com timestamp, supressão de diálgos de erro do Windows via `SetErrorMode`.
+- **ConsoleWidget** — nova aba Console com visualização de logs em tempo real, filtro por nível (All/Debug/Info/Warning/Error), cores Catppuccin Mocha, máximo 5000 blocos, atalho Ctrl+C para copiar.
+- **Memory Map UI** — nova aba com breakdown visual de memória física em 8 categorias (Active, Standby, Modified, Modified No-Write, Transition, Zeroed, Free, Bad) com progress bars, atualização a cada 10s.
+- **Modo headless** — argumentos `--headless`/`--silent` para executar sem GUI, `--clean`/`-c` para limpeza one-shot, `--report`/`-r` para relatório formatado, `--json`/`-j` para saída JSON. Tratamento de SIGINT/SIGTERM.
+
+### Added (NTAPI Kernel Expansion)
+- **Memory Compression API** — `getCompressedMemorySize()`, `getCompressionTotalData()`, `getCompressionRatio()`, `CompressionInfo`/`getCompressionInfo()` (lê estado do Memory Compression engine, threshold e swapfile compression), `setCompressionEnabled(bool)` via `NtSetSystemInformation(0x54)`.
+- **System Cache & Paged Pool** — `SystemCacheInfo`/`getSystemCacheInfo()` via `NtQuerySystemInformation(0x15)`, `PagedPoolInfo`/`getPagedPoolInfo()` via `NtQuerySystemInformation(0x42)`.
+- **NUMA Node Awareness** — `NumaInfo`/`getNumaInfo()` com `GetNumaHighestNodeNumber` + `GetNumaAvailableMemoryNodeEx`.
+- **Page Priority Management** — `setProcessPagePriority(pid, priority)` via `NtSetInformationProcess(0x27)` com constantes `PAGE_PRIORITY_*` em Constants.h.
+- **Disk Performance Queue** — `getDiskQueueLength()` via `IOCTL_DISK_PERFORMANCE` com cálculo de delta de transfer count.
+- **Power Status** — `PowerStatus`/`getPowerStatus()` lê `SYSTEM_POWER_STATUS` (AC line, battery %, battery life, charging state).
+- **Physical Memory Breakdown** — `PhysicalMemoryBreakdown`/`getPhysicalMemoryBreakdown()` extrai contagens de páginas active/standby/modified/transition/zero/free/bad via `NtQuerySystemInformation(0x50)`.
+- **Full-Screen Detection** — `isFullScreenAppActive()` detecta app full-screen ativo (exceto Progman/WorkerW) para game mode automático.
+- **Per-Process IO Stats** — `ProcessIoStats`/`getProcessIoStats()` com contadores de read/write/other ops e bytes.
+- **Generic Privilege Management** — `enablePrivilege(wchar_t*)` com helpers `enableLockMemoryPrivilege()`, `enableDebugPrivilege()`, `enableBackupPrivilege()`.
+- **Process Batch Operations** — `trimAllProcesses()`, `getProcessesWithLargeWS(threshold)`, `getProcessPageTableUsage(pid)`.
+
+### Changed
+- **MainWindow expandida** — 6 abas (Dashboard, Processes, Leak Hunter, Memory Map, System Info, Console), 11 memory cards, game detection a cada 5s, monitoramento de bateria, painel AI Info com workload/predições/anomalias, painel NUMA Nodes, painel Memory Compression, status bar com badge de IA, indicadores de cor por pressão.
+- **Adaptive Cleaning** — `FluxCleaner::adaptiveClean(snap)` com limpeza seletiva baseada em pressure score (deepClean se ≥ High, quickClean se free mem baixo, standby clean se hard faults altos), battery-aware (skip defrag/file cache em bateria), idle-aware process trimming.
+- **Scheduler aprimorado** — integração com HeuristicEngine para limpeza preditiva se IA prevê pressão ≥ High em 60s com ≥60% confiança, scheduled deep clean configurável (1h default), ProBalance dinâmico, battery boost mode.
+- **HeuristicEngine registrado como módulo #9** — workload classifier (7 tipos), pressure predictor (30/60/120s), detecção de anomalias (>3σ), integração com scheduler.
+- Versão atualizada de 2.3.0 para 2.4.0 (major feature + security release)
+- Manuais atualizados (EN/PT) com nova versão
+
+### Security
+- **Path traversal em banner da Console** — entrada de terceiros (e.g., banner em ASCII gerado por ferramentas externas) era concatenada em `QString` sem sanitização. Implementado `HtmlSanitizer` que filtra tags `<script>`, `on*=` e `javascript:` via regex.
+- **Argument injection no PrivilegedHelper** — parâmetros posicionais recebidos pela pipe nomeada eram passados para `CreateProcess` sem validação. Implementado `ArgValidator` com whitelist de padrões alfanuméricos.
+- **Buffer overflow em `NtApi::getProcessList()`** — `NtQuerySystemInformation` era chamada com buffer de tamanho fixo (64 KB) sem loop de retry. Substituído por alocação dinâmica com dobramento progressivo até 16 MB.
+
+---
+
+## [2.3.0] — 2026-05-29
+
+### Fixed
+- **Deadlock no HeuristicEngine** — `evaluateAndPost()` tentava travar `m_mutex` recursivamente enquanto já estava travado em `feedSnapshot()`, impedindo a MainWindow de abrir
+- **Status bar badge com `%%` duplicado** — `QString::arg()` tratava `%%` como literal, exibindo `AI: Gaming (85%%)`
+
+### Added
+- **Módulo de IA/ML** — HeuristicEngine, WorkloadClassifier, PressurePredictor com thread dedicada (2s)
+- **Identificação de carga de trabalho** — 7 tipos (Gaming, Development, Media, Browser, Heavy, Idle, Unknown)
+- **Previsão de pressão** — regressão linear com predição em 30/60/120s e detecção de anomalias (>3σ)
+- **Limpeza preventiva** — FluxScheduler consulta HeuristicEngine para gatilho antecipado se IA prevê pressão ≥ High em 60s com ≥60% confiança
+- **Badge de IA na barra de status** — lilás, exibe workload + confiança (`AI: Gaming (85%)`)
+- **Grupo AI Heuristics** na aba System Info — workload, predições, tendência, status de anomalia
+- **Checkbox "Enable AI Heuristics"** em Settings → Behavior, persistido em QSettings
+- **HeuristicEngine registrado como módulo #9** em main.cpp
+
+### Added (NTAPI Kernel Expansion)
+- **Working Set Aging** — `ProcessEntry` agora trackeia `lastWsChangeTime`; `FluxCleaner::trimProcesses()` pula processos ativos nos últimos 30s. Novo método `trimProcessesIdleOnly()` para trims conservadores.
+- **Hard Fault Prediction** — `HeuristicEngine::evaluateAndPost()` correlaciona page faults + disk queue + standby list para prever tempestades de hard fault. Nova função `NtApi::getDiskQueueLength()` via `IOCTL_DISK_PERFORMANCE`.
+- **NUMA Node Awareness** — `NtApi::getNumaInfo()` usa `GetNumaHighestNodeNumber` + `GetNumaAvailableMemoryNodeEx`. Novo grupo "NUMA Nodes" na System Info com memória disponível por nó.
+- **Page Priority Management** — `NtApi::setProcessPagePriority(pid, priority)` via `NtSetInformationProcess` (class 0x27). Constantes `PAGE_PRIORITY_*` em `Constants.h`.
+- **Memory Compression Tuning** — novo grupo "Memory Compression" na System Info. Alerta vermelho se compression ratio < 1.2x com hard faults > 50/s.
+
+### Changed
+- Versão atualizada de 2.2.1 para 2.3.0 (minor feature release)
+- Manuals atualizados (EN/PT) com nova versão
+
+---
+
+## [2.2.1] — 2026-05-29
+
+### Added
+- (placeholder for 2.2.1 changes)
+
+---
+
+## [1.1.2] — 2026-05-27
+
+### Fixed
+- **UI: fundo branco na aba Console** — `ConsoleWidget` não tinha background explícito, herdando o tema claro do sistema. Adicionado `setStyleSheet("background-color: #1e1e2e")` no widget
+- **UI: linhas brancas alternadas na tabela de processos** — `setAlternatingRowColors(true)` sem regra `::item:alternate` usava a cor padrão do sistema (branca). Adicionado `QTableWidget::item:alternate { background-color: #181825; }`
+
+### Changed
+- `ConsoleWidget`: fundo explícito `#1e1e2e` (Catppuccin Base) no widget raiz
+- `ProcessListWidget`: estilo `::item:alternate` com `#181825` (Catppuccin Mantle) para uniformizar fundo escuro
+
+---
+
+## [2.1.0] - 2026-05-28
+
+### Added
+- **Privileged Helper Process** (`RAMFluxHelper.exe`) — separate process with `requireAdministrator` manifest for performing admin-level memory operations (standby, modified, working set, combined, file cache, defrag)
+- **Named Pipe IPC** — helper opens `\\.\pipe\RAMFluxHelper` with NULL DACL; `FluxCleaner` sends commands and falls back gracefully if helper is unavailable
+- **Auto-scheduled Task** — helper self-registers `schtasks /create /sc onlogon /rl highest` on first elevated run; subsequent logons launch helper silently without UAC
+- **Deferred helper launch** — `MainWindow` attempts to launch helper 3s after startup if not running (triggers UAC once; scheduled task handles thereafter)
+
+### Fixed
+- **Crash on startup (0xc0000005)** — null pointer dereference on `m_statusLabel` caused by `onToggleAutomation` accessing the label before `setupUI()` created it. Moved `m_statusLabel`/`m_cleanStatsLabel`/`m_gameModeLabel` creation before `setupDashboardTab()`.
+- **Scheduler never ran** — `autoCheck->setChecked(true)` before `connect()` in `setupDashboardTab` caused `toggled(true)` to fire unhandled; order fixed.
+
+### Changed
+- **Adaptive cleaning logic** — `adaptiveClean()` now triggers `quickClean()` when free memory is low regardless of standby size; pressure >= HIGH (75) triggers `deepClean()` instead of CRITICAL (100)
+- **Removed redundant deepClean from schedulerLoop** — all cleaning delegated to `adaptiveClean()`
+- **Manifest** changed from `requireAdministrator` to `asInvoker` to enable Windows auto-start without elevation
+- **`NtQuerySystemInformation(0x53)` removed** — synthetic "System File Cache (Total)" entry incompatible with Win11; removed from `FluxNTAPI`
+- **File Summary tab removed** — showed loaded modules (DLL/EXE) per process with summed `SizeOfImage`, not actual cache data; misleading Total Size values. Removed `setupFileCacheTab`, `onFileCacheUpdated`, `getTopFileCache`, `FileCacheInfo` struct, and related members/timer
+- **NTDLL function pointers cached** — `NtSetSystemInformation` and `NtQuerySystemInformation` resolved once via `GetProcAddress` instead of on every call (was 7x per clean operation)
+- **Process list timer merged** — `ProcessListWidget::m_refreshTimer` (3s) removed; refresh triggered from `MainWindow::onMemoryUpdated()` (2s), eliminating redundant timer
+- **Adaptive polling added** — `changeEvent` handler in MainWindow reduces telemetry/scheduler/UI intervals when minimized or on battery (from AC); battery detection via `GetSystemPowerStatus`
+- **~50 dead code files removed** — entire `executor/`, `process/`, `analytics/`, `stability/`, `kernel/`, `kernelbridge/`, `settings/`, `performance/`, `logging/`, `ui/dashboard/`, `ui/theme/` directories plus individual stub files in `telemetry/`, `core/`, `optimizer/`, and `SplashScreen.*` — codebase reduced from ~120 to ~49 source files
+
+---
+
+## [1.1.1] — 2026-05-27
+
+### Fixed
+- **Crash: thread detached sem join no destrutor** — `onFileCacheUpdated()` criava `std::thread` com `.detach()`, permitindo que a thread continuasse executando durante o desligamento do CRT, acessando memória destruída. Agora a thread é armazenada como membro (`m_fileCacheThread`) e unida no destrutor da MainWindow
+- **Crash: use-after-free entre QPointer e invokeMethod** — o código convertia `QPointer` em raw pointer antes de chamar `invokeMethod(raw, ...)`, criando uma janela onde a MainWindow podia ser destruída entre a leitura e o uso. Agora usa `qApp` como receiver e o `QPointer` é verificado dentro da lambda (na GUI thread)
+- **Crash: thread file cache sem proteção SEH** — access violations dentro de `getTopFileCache` podiam não ser capturados por `catch(...)` dependendo do modo de exceção do MinGW; o recuo para `std::thread` joinable com `try-catch` externo garante tratamento adequado
+
+### Changed
+- `onFileCacheUpdated()`: thread migrada de `.detach()` para `m_fileCacheThread` joinable; receiver trocado de raw pointer para `qApp`
+- Destrutor `~MainWindow()`: `m_fileCacheThread.join()` executado antes de qualquer cleanup (Logger, EventBus)
+
+---
+
+## [1.1.0] — 2026-05-27
+
+### Added
+- User manual in Help menu (Português / English)
+- CHANGELOG.md following Keep a Changelog format
+- Versioning standard documented in README
+
+### Fixed
+- **Crash: EventBus use-after-free** — callbacks now use `QPointer<MainWindow>` instead of raw `this`, preventing dangling pointer access when MainWindow is destroyed while a telemetry callback is in flight
+- **Crash: detached thread use-after-free** — `onFileCacheUpdated()` uses `QPointer` created before `std::thread` launch; thread body wrapped in `try-catch` to prevent `std::terminate` on exception; GUI update callback checks `QPointer` before accessing members
+- **UI freeze when opening external apps** — `NtApi::getTopFileCache(50)` moved to background thread (was blocking GUI thread for seconds under memory pressure)
+- **Memory Map bars not showing** — reverted `getPhysicalMemoryBreakdown()` back to GUI thread (single NT API call, <1ms)
+- **Memory Map progress bars not displaying colors** — restored synchronous execution for memory map updates
+- **PressureHigh/PressureCritical firing together** — `else if` guard added
+- **Logger callback use-after-free** — `setCallback(nullptr)` in destructor
+- **ProBalance logic** — monotonic priority comparison fixed
+- **getProcessStandbyMemory returning garbage** — returns 0 (API not available per-process)
+- **getPhysicalMemoryBreakdown returning zero** — 512-byte buffer for Win11 `NtQuerySystemInformation`
+
+### Changed
+- Version bumped from 2.0.0 → 1.1.0 (SemVer reset)
+- `Version::getFullVersion()` now reads from `Constants::APP_VERSION` (single source of truth)
+- About dialog reads version from `Constants::APP_VERSION`
+- MemoryCollector: removed expensive `getTopFileCache(5)` from per-second polling loop
+- MainWindow default size: 1100×760
+- SettingsDialog: QScrollArea wrapper, reduced fonts, 520×400 min size
+- HistoryChart overlay default: "RAM Usage (GB)"
+
+---
+
+## [1.0.0] — 2026-05-13
+
+### Added
+- Initial release — memory monitoring and optimization tool for Windows
+- Real-time dashboard with memory charts and pressure scoring
+- Process manager with detailed memory metrics
+- Smart Optimize and Deep Clean
+- Auto-Optimize with adaptive background cleaning
+- ProBalance scheduler
+- Leak Hunter
+- File cache and memory map analysis
+- Game Mode with automatic detection
+- Profiles (Economy, Balanced, Performance, Gaming)
+- Scheduled cleaning and startup optimization
+- System information panel
+- Console log with severity filtering
+- System tray with background operation
+- Dark theme throughout
+- WiX-based MSI installer
