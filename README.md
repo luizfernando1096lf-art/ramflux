@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.14.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.14.1-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -53,6 +53,9 @@ RAMFlux is a modern, low-overhead memory optimization platform for Windows 10 an
 - **Process Memory Firewall** — per-process memory limits via Job Objects with automatic leak detection and quarantine
 - **System File Cache Tuner** — dynamic file cache reduction during gaming/mining workloads
 - **Memory Compression Manager** — adaptive MaxPerformance/Auto mode switching and decoder pool expansion
+- **EcoQoS (Efficiency Mode)** — `SetProcessInformation(ProcessPowerThrottling)` puts background processes in CPU efficiency mode; reduces battery/heat on notebooks (Win 10 1809+)
+- **Gentle Standby Clean** — chunked standby cleaning with disk queue guards (queue <1.5) and sleep intervals between chunks; elevates idle process page priorities before flushing
+- **Adaptive Standby Orchestration (3-tier)** — Tier 1 (HF critical + high pressure) → gentle clean; Tier 2 (HF critical + standby >1GB) → selective clean with WS trim; Tier 3 (standby >2GB preventive) → gentle clean
 
 ---
 
@@ -183,11 +186,18 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.14.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.14.1**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.14.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.14.0) |
+| Latest Release | [v2.14.1](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.14.1) |
+
+### v2.14.1 — Audit Fixes, EcoQoS & Gentle Standby Clean
+- **EcoQoS (Efficiency Mode)** — background processes put into CPU efficiency mode via `SetProcessInformation(ProcessPowerThrottling)`; reduces battery/heat on notebooks (Win 10 1809+)
+- **Gentle Standby Clean** — chunked standby cleaning with disk queue guards and sleep intervals; minimizes I/O impact on low-RAM systems
+- **Adaptive Standby Orchestration (3-tier)** — Tier 1 (HF critical + high pressure) → gentle clean; Tier 2 (HF critical + standby >1GB) → selective clean; Tier 3 (standby >2GB preventive) → gentle clean
+- **6 audit fixes** — 2 CRITICAL (GetLastError after LocalFree), 2 HIGH (missing FILE_FLAG_OVERLAPPED, disablePrivilege using wrong constant), 2 MEDIUM (readOk unconditional, predictFuture data race)
+- [Full changelog](CHANGELOG.md)
 
 ### v2.14.0 — Memory Heatmap, Intelligent Standby, NUMA Pinning & More
 - **Memory Heatmap UI** — new tab with treemap visualization of process memory: blocks sized by Working Set, colored by RAM ratio, with foreground highlighting and live tooltips
