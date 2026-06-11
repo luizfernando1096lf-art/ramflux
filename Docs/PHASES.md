@@ -3,7 +3,7 @@
 
 # RAMFlux Development Phases
 
-> **Status v2.12.0**: Phases 1-27 concluídos.
+> **Status v2.14.1**: Phases 1-29 concluídos.
 > - Auto-tuning Engine: feedback loop que ajusta cooldown/intervalo do Scheduler e Cleaner conforme acurácia das predições (v2.7.0)
 > - HardFaultPredictor 2.0: predição por regressão linear com severidade graduada (5 níveis: None/Critical), substituindo threshold fixo binário (v2.7.0)
 > - Effectiveness Tracking: storePrediction/evaluatePredictionAccuracy — acurácia geral + recente, FP/FN tracking (v2.7.0)
@@ -570,6 +570,50 @@ A systematic rework to prevent disk thrashing caused by aggressive memory cache 
 3. `src/ui/MainWindow.cpp:775,335-340` — bounds check em `onProfileChanged()` + item "Mining" adicionado ao Dashboard combo (estava faltando, causando mismatch com sistema de 6 perfis)
 
 **Build:** MinGW 13.1.0, Qt 6.8.0, deployed to `C:\RAMFlux`
+
+---
+
+# PHASE 29 — AUDIT FIXES & GENTLE OPERATIONS (v2.14.1)
+
+A critical bugfix and feature release focused on eliminating hidden bugs and adding gentle, battery-aware operations.
+
+**6 Bugs Found & Fixed in Final Audit:**
+
+*CRITICAL (2x):*
+- `RAMFluxHelper.cpp:33` — `GetLastError()` after `LocalFree(sd)` in `ensureScheduledTask()` — saved error code before freeing
+- `RAMFluxHelper.cpp:306` — same bug in singleton mutex at `WinMain` — saved `singletonErr` before `LocalFree(mutexSd)`
+
+*HIGH (2x):*
+- `HelperClient.cpp:20` — `CreateFileW` without `FILE_FLAG_OVERLAPPED` (synchronous pipe handle used with Overlapped I/O → infinite hang)
+- `FluxNTAPI.cpp:95` — `disablePrivilege` used `0x2` (SE_PRIVILEGE_ENABLED) instead of `0x0` (disabled) — privileges never actually disabled
+
+*MEDIUM (2x):*
+- `RAMFluxHelper.cpp:255` — `readOk` unconditionally TRUE after `GetOverlappedResult` failure
+- `FluxNTAPI.cpp:697-700` — `predictFuture()` data race on `samples` + deadlock from nested lock — refactored with `trendSlopeLocked()` unlocked helper
+
+**3 New Features:**
+
+*EcoQoS (Efficiency Mode):*
+- `NtApi::setProcessEfficiencyMode(pid)` uses `SetProcessInformation(ProcessPowerThrottling)` (Win 10 1809+)
+- Puts background processes in CPU efficiency mode — reduces power/heat on notebooks
+- Integrated into FluxScheduler (30s loop, targets idle background WS >100MB)
+
+*Gentle Standby Clean:*
+- `NtApi::gentleStandbyClean()` — splits processes by WS age (active vs idle), elevates idle page priority
+- Cleans standby in 3 chunks with `Sleep(500ms)` + disk queue guard (`<1.5`) between chunks
+- `FluxCleaner::gentleStandbyClean()` wrapper for scheduler access
+
+*Adaptive Standby Orchestration (3-tier):*
+- Replaces single-threshold logic in `FluxScheduler::applyStandbyOrchestration()`
+- Tier 1: HF critical + high pressure + standby >256MB → gentle clean
+- Tier 2: HF critical + standby >1GB → selective clean (WS trim idle >120s)
+- Tier 3: Standby >2GB preventive → gentle clean
+- All tiers gated by disk queue <1.5
+
+**Fixes:**
+- `selectiveStandbyClean()` rewritten — now uses per-process WS trim for idle processes instead of page priorities alone (page priorities don't filter `NtSetSystemInformation(MemoryListStandby)` which clears ALL standby pages)
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
 
 ---
 

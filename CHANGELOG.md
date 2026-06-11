@@ -5,6 +5,26 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.14.1] — 2026-06-10
+
+### Added
+- **EcoQoS (Efficiency Mode)** — `NtApi::setProcessEfficiencyMode(pid)` uses `SetProcessInformation(ProcessPowerThrottling)` (Win 10 1809+) to put background processes into CPU efficiency mode; reduces CPU/battery overhead on notebooks
+- **Gentle Standby Clean** — `NtApi::gentleStandbyClean()` splits processes into active vs idle groups (via WS aging), elevates idle page priority before standby flush; cleans in chunks with `Sleep(500ms)` between chunks, disk queue check (`<1.5`) before each chunk; `FluxCleaner::gentleStandbyClean()` wrapper
+- **Adaptive Standby Orchestration (3-tier)** — `FluxScheduler::applyStandbyOrchestration()` rewritten: Tier 1 (HF critical + high pressure + standby >256MB) → gentle clean; Tier 2 (HF critical + standby >1GB) → selective clean with idle WS trim; Tier 3 (standby >2GB preventive, no HF) → gentle clean
+- **`selectiveStandbyClean()` rewritten** — now uses per-process working set trimming for idle (>120s) processes with moderate page priority, instead of relying on page priorities alone (which don't filter `NtSetSystemInformation(MemoryListStandby)` since all standby pages are cleared regardless)
+
+### Fixed
+- **CRITICAL: GetLastError() after LocalFree (RAMFluxHelper.cpp:33)** — `GetLastError()` was called after `LocalFree(sd)` in `ensureScheduledTask()`, which resets last-error to `ERROR_SUCCESS`; error code now saved before `LocalFree`
+- **CRITICAL: GetLastError() after LocalFree (RAMFluxHelper.cpp:306)** — same bug in singleton mutex creation at `WinMain`; `singletonErr` now saved before `LocalFree(mutexSd)`
+- **HIGH: CreateFileW missing FILE_FLAG_OVERLAPPED (HelperClient.cpp:20)** — pipe handle opened without `FILE_FLAG_OVERLAPPED` but used with `OVERLAPPED` structures in `ReadFile`; caused infinite hang since the handle was synchronous
+- **HIGH: disablePrivilege used SE_PRIVILEGE_ENABLED (FluxNTAPI.cpp:95)** — `disablePrivilege()` was setting `0x2` (SE_PRIVILEGE_ENABLED) instead of `0x0` (SE_PRIVILEGE_DISABLED), meaning every `ScopedPrivilege` destructor was a no-op (privilege leak — privileges never actually disabled)
+- **MEDIUM: readOk unconditionally TRUE (RAMFluxHelper.cpp:255)** — `readOk` was set to `TRUE` after `GetOverlappedResult` even when the call failed, masking read errors
+- **MEDIUM: predictFuture() data race + deadlock (FluxNTAPI.cpp:697-700)** — `HardFaultHistory::predictFuture()` read `samples` without lock while `trendSlope()` held the mutex; adding a lock inside `predictFuture()` created a deadlock as it's called from `getPredictiveHardFaultInfo()` which also holds the lock; fixed by extracting `trendSlopeLocked()` as an unlocked helper
+
+### Changed
+- **FluxScheduler::applyStandbyOrchestration()** — complete rewrite from simple single-threshold logic to adaptive 3-tier model (see Added section)
+- **FluxNTAPI::selectiveStandbyClean()** — now does per-process WS trim instead of page-priority-based standby filtering; more effective at freeing memory without impacting active process cache
+
 ## [2.14.0] — 2026-06-08
 
 ### Added

@@ -182,7 +182,7 @@ Process rules engine and watchdog.
 
 **Never:** block UI thread, run heavy NTAPI calls in UI thread
 
-## Memory Optimization Flow (v2.7.0)
+## Memory Optimization Flow (v2.14.1)
 
 ```
 Telemetry (incl. NUMA, Disk Queue, Page Faults)
@@ -192,6 +192,8 @@ Pressure Analysis (compression ratio, fault trend, AI boost)
 AI Heuristics (workload, anomaly, hard fault prediction)
 ↓
 PreemptiveConfidence (continuous AI boost in pressure score)
+↓
+EcoQoS (apply efficiency mode to background idle processes)
 ↓
 Working Set Aging Check (skip active processes <30s)
 ↓
@@ -209,7 +211,10 @@ Optimization Decision
 ↓
 Working Set Trim (idle processes only)
 ↓
-Standby Purge
+Adaptive Standby Orchestration (3-tier):
+  Tier 1: HF critical + high pressure → gentleStandbyClean
+  Tier 2: HF critical + standby >1GB → selectiveStandbyClean
+  Tier 3: Standby >2GB preventive → gentleStandbyClean
 ↓
 Hard Fault Check (disk queue + faults correlation)
 ↓
@@ -351,19 +356,26 @@ The widget uses `QPainter` for custom rendering with `setMouseTracking(true)` fo
 
 The intelligent standby list subsystem elevates page priority of critical processes before flushing the standby list, preserving their cached pages for faster recall.
 
-**Mechanism:**
-- `NtApi::selectiveStandbyClean(maxPriority)` — enumerates all processes, finds those with:
-  - Foreground window (via `GetForegroundWindow`)
-  - Working set > `SL_FOREGROUND_WS_THRESHOLD` (500MB)
-  - Game/miner status (via GameMode/MiningMode queries)
-- For each critical process: calls `NtSetInformationProcess(ProcessPagePriority, Foreground)` to elevate page priority to 6
-- For non-critical processes: lowers page priority to `SL_STANDBY_PRIORITY_BELOW_NORMAL` (2)
-- Finally flushes standby list pages with priority ≤ `maxPriority` via `NtSetSystemInformation(SystemMemoryListInformation, MemoryPurgeStandbyList)`
-- `NtApi::standbyPriorityDistribution()` returns histogram of page priorities currently in the standby list for diagnostics
+**Mechanism (v2.14.0 — original, page priority approach):**
+- `NtApi::selectiveStandbyClean(maxPriority)` — enumerates all processes, finds critical ones (foreground, WS >500MB, game/miner)
+- For critical processes: elevates page priority to 6 (Foreground)
+- For non-critical processes: lowers page priority to 2 (Below Normal)
+- Flushes standby list pages with priority ≤ `maxPriority`
+
+**Revised mechanism (v2.14.1 — WS trim approach):**
+- Page priority approach was ineffective: `NtSetSystemInformation(MemoryListStandby)` clears ALL standby pages regardless of priority
+- `selectiveStandbyClean()` now uses per-process Working Set trimming for idle processes
+- Identifies processes idle for >120s (via WS aging) with WS >100MB
+- Sets page priority to `MEDIUM` (3) on these processes, then calls `trimWorkingSet(pid)` on each
+- After WS trim, calls `clearStandbyList()` once to flush the faded pages from standby
+- Much more effective: directly reduces both WS and standby memory simultaneously
 
 **Scheduler Integration (`FluxScheduler::applyStandbyOrchestration()`):**
 - Runs every `SL_ORCHESTRATION_INTERVAL_MS` (30s)
-- Integrates with Hard Fault Predictor: if predicted score > warning threshold → selective clean; if critical → deep clean
+- **v2.14.1**: 3-tier adaptive model replaces single-threshold logic
+  - Tier 1: HF critical + high pressure + standby >256MB → gentle standby clean
+  - Tier 2: HF critical + standby >1GB → selective clean (WS trim idle >120s)
+  - Tier 3: Standby >2GB preventive → gentle standby clean
 - Respects disk queue guard (skips if queue > 1.5)
 - Configurable via `setStandbyOrchestrationEnabled()` / `isStandbyOrchestrationEnabled()`
 
@@ -508,6 +520,77 @@ Enhanced from v2.7.0's compression tuning:
 **Diagnostics:**
 - Periodic logging every 10th check: compressed GB, uncompressed GB, savings percentage
 - Controlled by `m_compressionLogCounter` modulo 10
+
+## EcoQoS — Efficiency Mode (v2.14.1)
+
+The Efficiency Mode subsystem (`NtApi::setProcessEfficiencyMode`) uses Windows' `SetProcessInformation(ProcessPowerThrottling)` API (available since Win 10 1809) to put background processes into CPU efficiency mode:
+
+**Mechanism:**
+- Opens process with `PROCESS_SET_INFORMATION`
+- Calls `SetProcessInformation(ProcessPowerThrottling)` with `PROCESS_POWER_THROTTLING_EXECUTION_SPEED` flag
+- When enabled: Windows scheduler reduces CPU allocation for the process, lowering power consumption
+- When disabled: process returns to normal CPU scheduling
+
+**Integration:**
+- `FluxScheduler::applyEcoQoS()` runs every 30s during battery/low-power modes
+- Targets background processes (WS >100MB, idle >60s) — skips foreground, game, and miner processes
+- Configurable via `setEcoQoSEnabled()` / `isEcoQoSEnabled()`
+- Particularly beneficial on notebooks: reduces fan noise, extends battery life
+- Complements ProBalance by reducing CPU contention rather than memory pressure
+
+## Gentle Standby Clean (v2.14.1)
+
+A non-disruptive standby list cleaning strategy that minimizes I/O impact:
+
+**Problem:**
+- `clearStandbyList()` (via `NtSetSystemInformation(MemoryPurgeStandbyList)`) is an all-or-nothing operation — flushes ALL standby pages at once
+- Aggressive flushing forces subsequent file reads to hit disk, causing stutter
+- On low-RAM systems, even moderate cleaning can spike disk queue
+
+**Solution — Gentle Standby Clean (`NtApi::gentleStandbyClean`):**
+1. **Split processes**: iterate all processes, classify by WS age (active if <120s since last WS change, idle otherwise)
+2. **Phase 1 — elevate idle priorities**: set page priority to `VERY_LOW` (1) on idle processes, `NORMAL` (5) on active ones — ensures active process pages are lower priority and get flushed first? No — page priority actually marks which pages are preferred to stay; lower priority pages are purged first. So idle processes get low priorities so their pages are cleaned first.
+3. **Chunked cleaning**: calls `clearStandbyList()` in 3 chunks with `Sleep(500ms)` between each
+4. **Disk queue guard**: checks `getDiskQueueLength() < 1.5` before each chunk; if queue is busy, skips remaining chunks
+5. **Restore priorities**: after cleaning, restores all process page priorities to `NORMAL` (5)
+
+**Integration:**
+- `FluxCleaner::gentleStandbyClean()` — public wrapper called by FluxScheduler
+- Invoked in Tier 1 and Tier 3 of the adaptive standby orchestration (see below)
+- Not used in RAMFluxHelper (no elevation needed for page priority operations)
+
+## Adaptive Standby Orchestration (v2.14.1)
+
+The adaptive standby orchestration in `FluxScheduler::applyStandbyOrchestration()` replaces the previous single-threshold logic with a 3-tier decision model:
+
+**Tiers:**
+
+| Tier | Condition | Action | Purpose |
+|------|-----------|--------|---------|
+| 1 | HF critical + high pressure + standby >256MB | `gentleStandbyClean()` | Free cache when system is actively faulting |
+| 2 | HF critical + standby >1GB | `selectiveStandbyClean()` (WS trim idle >120s) | Aggressive but targeted — only idle processes |
+| 3 | Standby >2GB (preventive, no HF) | `gentleStandbyClean()` | Proactive cleaning before pressure builds |
+
+**Flow:**
+```
+applyStandbyOrchestration():
+  1. Check disk queue (<1.5 to proceed)
+  2. Query HF predictor for current score
+  3. Query memory pressure
+  4. Query standby size
+  5. Tier selection:
+     - HF critical + pressure high + standby >256MB → gentle clean (T1)
+     - HF critical + standby >1GB → selective clean with idle WS trim (T2)
+     - Standby >2GB (no HF) → gentle clean (T3 — preventive)
+     - Otherwise → skip (no action needed)
+  6. Log tier selected and reason
+```
+
+**Key design decisions:**
+- Tier 1 uses gentle cleaning (chunked + gated) because the system is already under hard fault pressure — aggressive cleaning would make faults worse
+- Tier 2 uses selective clean (WS trim of idle processes) because there's enough standby to work with and no immediate pressure
+- Tier 3 is preventive — catches large standbys before they cause pressure, uses gentle clean to minimize disruption
+- Disk queue guard applied at the top level (all tiers skip if queue ≥1.5)
 
 ## Mining Mode (v2.14.0)
 
