@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.14.1-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.15.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,13 +186,13 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.14.1**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.15.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.14.1](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.14.1) |
+| Latest Release | [v2.15.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.15.0) |
 
-### v2.14.1 — Audit Fixes, EcoQoS & Gentle Standby Clean
+### v2.15.0 — ML Engine & I/O Cost Tracker
 - **EcoQoS (Efficiency Mode)** — background processes put into CPU efficiency mode via `SetProcessInformation(ProcessPowerThrottling)`; reduces battery/heat on notebooks (Win 10 1809+)
 - **Gentle Standby Clean** — chunked standby cleaning with disk queue guards and sleep intervals; minimizes I/O impact on low-RAM systems
 - **Adaptive Standby Orchestration (3-tier)** — Tier 1 (HF critical + high pressure) → gentle clean; Tier 2 (HF critical + standby >1GB) → selective clean; Tier 3 (standby >2GB preventive) → gentle clean

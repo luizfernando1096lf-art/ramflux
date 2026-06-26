@@ -3,7 +3,7 @@
 
 # RAMFlux Development Phases
 
-> **Status v2.14.1**: Phases 1-29 concluídos.
+> **Status v2.15.0**: Phases 1-30 concluídos.
 > - Auto-tuning Engine: feedback loop que ajusta cooldown/intervalo do Scheduler e Cleaner conforme acurácia das predições (v2.7.0)
 > - HardFaultPredictor 2.0: predição por regressão linear com severidade graduada (5 níveis: None/Critical), substituindo threshold fixo binário (v2.7.0)
 > - Effectiveness Tracking: storePrediction/evaluatePredictionAccuracy — acurácia geral + recente, FP/FN tracking (v2.7.0)
@@ -612,6 +612,56 @@ A critical bugfix and feature release focused on eliminating hidden bugs and add
 
 **Fixes:**
 - `selectiveStandbyClean()` rewritten — now uses per-process WS trim for idle processes instead of page priorities alone (page priorities don't filter `NtSetSystemInformation(MemoryListStandby)` which clears ALL standby pages)
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
+# PHASE 30 — ML ENGINE & I/O COST TRACKER (v2.15.0)
+
+A feature release introducing machine learning prediction and I/O cost measurement.
+
+### ML Engine — MLEngine
+
+**`src/ai/MLEngine.h/.cpp`** — Multi-variable linear regression with online SGD:
+- 10 features: hard faults/sec, 5-avg, slope, disk queue + slope, standby GB + slope, memory pressure, total WS, time since last clean
+- Running z-score normalization (α=1e-4 for mean/std)
+- SGD learning rate: 0.01
+- Prediction horizon: 30s, auto-trained via T vs T+30s comparison
+- Prediction clamped to [0, 100], confidence based on sample count
+- Thread-safe via `std::mutex`
+
+**Integration:**
+- Owned by `HeuristicEngine` as `m_mlEngine`
+- `extractFeatures()` + `predict()` + `processTraining()` called every `evaluateAndPost()` cycle
+- `MLPrediction` stored in `HeuristicReport.mlScore/mlConfidence/mlSampleCount`
+- Subscribes to `CleaningFinished` for `m_lastCleanTime` tracking
+
+### I/O Cost Tracker — IoCostTracker
+
+**`src/ai/IoCostTracker.h/.cpp`** — Per-process page fault attribution after cleaning:
+- `beforeClean()` snapshots all processes' cumulative page faults
+- After 30s, `evaluateCosts()` computes delta per process
+- Cost score via EMA (α=0.3): `newCost = min(100, delta/100)`
+- `ProcessIoCost` per PID with 0-100 score
+- `IoCostReport.systemIoCost` = mean of all process scores
+
+**Integration:**
+- Owned by `HeuristicEngine` as `m_ioCostTracker`
+- Subscribes to `CleaningStarted`/`CleaningFinished` events
+- `FluxScheduler::applyStandbyOrchestration()` skips non-critical clean when `systemIoCost ≥ 50`
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/ai/MLEngine.h` | New — ML engine class + data structs |
+| `src/ai/MLEngine.cpp` | New — SGD, feature extraction, training |
+| `src/ai/IoCostTracker.h` | New — I/O cost tracker |
+| `src/ai/IoCostTracker.cpp` | New — fault delta measurement + scoring |
+| `src/ai/HeuristicEngine.h` | Added MLEngine + IoCostTracker members + report fields |
+| `src/ai/HeuristicEngine.cpp` | MLEngine predict/train + IoCostTracker integration |
+| `src/scheduler/FluxScheduler.cpp` | I/O cost gate in standby orchestration |
+| `CMakeLists.txt` | Added new .cpp files to AI_SOURCES |
 
 **Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
 

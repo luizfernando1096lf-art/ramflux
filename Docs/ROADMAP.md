@@ -70,7 +70,7 @@ RAMFlux DOES aim to:
 RAMFlux/
 │
 ├── src/
-│   ├── ai/              (HeuristicEngine, WorkloadClassifier, PressurePredictor)
+│   ├── ai/              (HeuristicEngine, WorkloadClassifier, PressurePredictor, MLEngine, IoCostTracker)
 │   ├── analyzer/        (FluxProcessAnalyzer — CPU sampling, leak detection)
 │   ├── benchmark/       (BenchmarkRunner — 5-phase scientific benchmarking, tri-format reports)
 │   ├── classifier/      (FluxClassifier — per-process memory pattern classification)

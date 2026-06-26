@@ -182,7 +182,7 @@ Process rules engine and watchdog.
 
 **Never:** block UI thread, run heavy NTAPI calls in UI thread
 
-## Memory Optimization Flow (v2.14.1)
+## Memory Optimization Flow (v2.15.0)
 
 ```
 Telemetry (incl. NUMA, Disk Queue, Page Faults)
@@ -586,11 +586,124 @@ applyStandbyOrchestration():
   6. Log tier selected and reason
 ```
 
+**Tier 0 — I/O Cost Gate (v2.15.0):**
+- Before any tier is evaluated, `systemIoCost` is read from `HeuristicReport.ioCost`
+- If `systemIoCost >= 50.0` (high I/O cost) AND no critical HF, the entire orchestration is skipped
+- This prevents cleaning when previous cleans caused heavy page faulting (disk thrashing)
+- Cost scores are learned over time by the IoCostTracker (see below)
+
 **Key design decisions:**
 - Tier 1 uses gentle cleaning (chunked + gated) because the system is already under hard fault pressure — aggressive cleaning would make faults worse
 - Tier 2 uses selective clean (WS trim of idle processes) because there's enough standby to work with and no immediate pressure
 - Tier 3 is preventive — catches large standbys before they cause pressure, uses gentle clean to minimize disruption
 - Disk queue guard applied at the top level (all tiers skip if queue ≥1.5)
+- New Tier 0 (I/O cost gate) added in v2.15.0 — skips non-critical cleaning when previous cleans caused high I/O cost
+
+## ML Engine — MLEngine (v2.15.0)
+
+The ML Engine replaces the single-variable linear regression used in `HardFaultPredictor` and `HardFaultHistory` with a multi-feature model trained via online SGD.
+
+**Location:** `src/ai/MLEngine.h/.cpp`
+
+### Architecture
+
+```
+MemorySnapshot ──→ MLEngine::extractFeatures() ──→ MLFeatures (10 fields)
+                                                        │
+                                                        ▼
+                                              MLEngine::predict()
+                                                        │
+                                                        ▼
+                                              MLPrediction (score30s, confidence)
+                                                        │
+                                                        ▼
+                                              HeuristicReport.mlScore
+```
+
+### Features (10)
+| Index | Feature | Source | Description |
+|-------|---------|--------|-------------|
+| 0 | `hardFaultsPerSec` | `snap.hardFaultsPerSec` | Current hard faults/sec |
+| 1 | `hardFaultsAvg5` | Mean of last 5 samples | Smooths short spikes |
+| 2 | `hardFaultSlope` | Linear slope over 10 samples | Fault trend direction |
+| 3 | `diskQueueLength` | `snap.diskQueueLength` | Current disk queue depth |
+| 4 | `diskQueueSlope` | Linear slope over 10 samples | Disk queue trend |
+| 5 | `standbyGB` | `snap.standbyRamGB()` | Current standby list size |
+| 6 | `standbySlope` | Linear slope over 10 samples | Standby size trend |
+| 7 | `memoryPressure` | `snap.pressureScore` | Current memory pressure (0-100) |
+| 8 | `totalWsGB` | `snap.usedRam / 1GB` | Total memory in use |
+| 9 | `secondsSinceLastClean` | Clean event timestamp delta | Time since last standby clean |
+
+### Model
+- **Type**: Multi-variable linear regression: `score = Σ(norm(feat[i]) * w[i]) + bias`
+- **Weights**: `m_weights[11]` — 10 feature weights + 1 bias term
+- **Normalization**: Running z-score (online mean/std with α=1e-4)
+- **Learning rate**: 0.01 (configurable via `setLearningRate()`)
+
+### Training
+- **Algorithm**: Stochastic Gradient Descent (SGD):
+  `w[i] -= lr * (predicted - actual) * norm(feat[i])`
+- **Training signal**: Prediction at time T is stored in `m_pendingTrain` deque; at T+30s, the actual `snap.pressureScore` is compared to the stored prediction, and weights are updated via SGD
+- **`processTraining(currentPressureScore)`**: Called every `evaluateAndPost()` cycle; drains expired pending records (≥30s old) and trains on each
+- **Minimum samples**: 10 required before confidence > 0
+
+### Integration
+- Owned by `HeuristicEngine` as `m_mlEngine`
+- `extractFeatures()` called each cycle with current snapshot + `m_lastCleanTime`
+- `predict()` called after feature extraction, result stored in `HeuristicReport`
+- `processTraining()` called after predict — trains on expired pending records
+- `m_lastCleanTime` updated via `CleaningFinished` event subscription
+
+### Safety
+- All weights initialized to 0 (neutral prediction until trained)
+- Prediction clamped to [0, 100]
+- Thread-safe via `std::mutex m_mtx`
+- Disabled via `setEnabled(false)` — returns score 0
+- Running statistics exposed via `MLTrainingStats` (sample count, mean error, weight magnitude)
+
+## I/O Cost Tracker — IoCostTracker (v2.15.0)
+
+The I/O Cost Tracker measures the real-world cost of standby cleaning by observing per-process page fault deltas after each clean event.
+
+**Location:** `src/ai/IoCostTracker.h/.cpp`
+
+### Problem
+Clearing the standby list forces processes to re-read their pages from disk, generating hard faults. Different processes pay different costs depending on how much of their working set was in the standby list. Previously, the system had no way to measure which processes were most affected.
+
+### Algorithm
+```
+beforeClean():
+  1. Snapshot each process's cumulative pageFaults counter → m_beforeSnapshot
+
+afterClean():
+  1. Record clean completion timestamp
+
+evaluateCosts():
+  1. Wait 30s after m_lastCleanStart
+  2. Take new fault snapshot for each process
+  3. Compute delta = currentFaults - beforeFaults (per process)
+  4. Update cost score via EMA:
+     newCost = min(100, delta / 100)
+     costScore = costScore * (1 - alpha) + newCost * alpha
+```
+
+### Data Structures
+- **`ProcessIoCost`**: pid, name, `costScore` (0-100), `lastFaultDelta`, `sampleCount`
+- **`IoCostReport`**: `topCostProcesses` (vector), `systemIoCost` (mean of all scores), `trackedProcesses`, `totalSamples`, `lastCleanTime`, `cleanInProgress`
+- **Storage**: `unordered_map<pid, ProcessIoCost>` — one entry per observed process
+
+### Integration
+- Owned by `HeuristicEngine` as `m_ioCostTracker`
+- Subscribes to `CleaningStarted` → `beforeClean()`
+- Subscribes to `CleaningFinished` → `afterClean()`
+- `evaluateCosts()` called every `evaluateAndPost()` cycle
+- `IoCostReport` stored in `HeuristicReport.ioCost`
+- `FluxScheduler::applyStandbyOrchestration()` reads `systemIoCost` — skips non-critical cleaning when cost ≥ 50.0
+
+### EMA Alpha
+- `DEFAULT_ALPHA = 0.3` — balances responsiveness vs smoothing
+- High alpha → reacts quickly to recent cleans (good for changing workloads)
+- Configurable via `setAlpha()`
 
 ## Mining Mode (v2.14.0)
 

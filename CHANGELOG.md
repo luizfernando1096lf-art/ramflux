@@ -5,6 +5,17 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.15.0] — 2026-06-25
+
+### Added
+- **ML Engine (MLEngine)** — multi-variable linear regression with online SGD training; 10 features (faults/sec, 5-avg, slope, disk queue + slope, standby GB + slope, memory pressure, total WS, time since last clean); predicts hard fault score in 30s (0-100); auto-trains using prediction-vs-actual at T+30s horizon; running z-score normalization; 60-sample feature history
+- **I/O Cost Tracker (IoCostTracker)** — measures per-process page fault delta after standby cleaning to score each process's I/O cost (EMA, alpha=0.3); high-cost processes (>50 score) cause the scheduler to skip non-critical gentle cleaning; `ProcessIoCost` with 0-100 cost score per PID
+- **`HeuristicReport` extended** — new fields: `mlScore`, `mlConfidence`, `mlSampleCount`, `mlEnabled`, `ioCost` report
+
+### Changed
+- **`HeuristicEngine::evaluateAndPost()`** — now calls `MLEngine::extractFeatures()` + `predict()` + `processTraining()` each cycle; subscribes to `CleaningStarted`/`CleaningFinished` events for IoCostTracker feedback
+- **`FluxScheduler::applyStandbyOrchestration()`** — reads `systemIoCost` from `HeuristicReport`; skips non-critical gentle clean when I/O cost > 50
+
 ## [2.14.1] — 2026-06-10
 
 ### Added
