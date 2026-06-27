@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.20.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,15 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.19.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.20.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.19.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.19.0) |
+| Latest Release | [v2.20.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.20.0) |
+
+### v2.20.0 — I/O Bandwidth Throttling
+
+Dynamically lowers I/O priority of background processes when disk queue pressure exceeds threshold; auto-restores on cooldown.
 
 ### v2.19.0 — Cross-Process Memory Dedup
 

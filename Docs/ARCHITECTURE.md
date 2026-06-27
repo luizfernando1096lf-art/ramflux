@@ -871,6 +871,29 @@ ProcessCache → top-10 by WS → VirtualQueryEx → sample pages → FNV-1a 64-
 - **`QoSEnforcement`**: `rulesApplied`, `violationsFound`, `actionsTaken`, `totalRules`, `activeViolations` vector
 - **Storage**: `vector<QoSRule>` — rules applied in order (last match wins for overlapping patterns)
 
+## I/O Bandwidth Throttling — IoBandwidthThrottler (v2.20.0)
+
+**Location:** `src/scheduler/IoBandwidthThrottler.h/.cpp`
+
+The IoBandwidthThrottler dynamically lowers the I/O priority of background processes when the system disk queue exceeds a threshold, preventing background I/O from starving foreground applications.
+
+**Flow:**
+```
+getDiskQueueLength() ≥ threshold → enumerate ProcessCache → setProcessIoPriority(VERY_LOW) for background processes
+```
+
+- **Trigger**: disk queue length ≥ 2.0 (configurable via `setDiskQueueThreshold()`)
+- **Action**: calls `NtApi::setProcessIoPriority(pid, 0)` (VERY_LOW) on eligible processes
+- **Restore**: once disk queue drops below threshold, waits 30s cooldown then restores original I/O priority
+- **I/O priority level**: configurable between 0 (VERY_LOW) and 1 (LOW) via `setIoPriorityLevel()`
+- **Protection**: skips RAMFlux, svchost, system, csrss, winlogon, services, and self
+- **Interval**: re-evaluates every 5s in the scheduler loop
+
+### Integration
+- `FluxScheduler` owns `IoBandwidthThrottler m_ioBandwidth` with `m_iobandwidthEnabled` flag
+- `applyIoBandwidthThrottling()` called in scheduler loop when enabled
+- Suppressed during battery boost mode
+
 ## Mining Mode (v2.14.0)
 
 New mode parallel to Game Mode for cryptocurrency mining workloads:

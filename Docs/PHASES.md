@@ -822,6 +822,37 @@ Detect duplicate memory pages across processes using fast hashing, estimate pote
 
 ---
 
+## Phase 35 — I/O Bandwidth Throttling (v2.20.0)
+
+### Objective
+Dynamically cap background process I/O bandwidth during high disk pressure to prevent I/O starvation of foreground applications.
+
+### Implementation
+
+**IoBandwidthThrottler (`src/scheduler/IoBandwidthThrottler.h/.cpp`):**
+- Monitors disk queue length via `NtApi::getDiskQueueLength()`
+- When queue ≥ 2.0 (configurable), sets background processes to `PROCESS_IO_PRIORITY_VERYLOW`
+- Saves original I/O priority before modification; restores after 30s cooldown when pressure normalizes
+- Protects critical processes (RAMFlux, svchost, system, csrss, winlogon, services)
+
+### Integration
+- `FluxScheduler` — owns `m_ioBandwidth`; calls `m_ioBandwidth.update()` via `applyIoBandwidthThrottling()`
+- `m_iobandwidthEnabled` toggle; suppressed during battery boost
+- Follows the same pattern as CpuLimiter
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/scheduler/IoBandwidthThrottler.h` | New — class with enabled/update/reset API |
+| `src/scheduler/IoBandwidthThrottler.cpp` | New — disk queue monitoring, priority save/restore, throttle loop |
+| `src/scheduler/FluxScheduler.h` | Added member, flag, getter/setter, apply method |
+| `src/scheduler/FluxScheduler.cpp` | Wired applyIoBandwidthThrottling into scheduler loop |
+| `CMakeLists.txt` | Added IoBandwidthThrottler.cpp/h; version bumped to 2.20.0 |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:

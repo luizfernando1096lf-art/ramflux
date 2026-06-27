@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.20.0] — 2026-06-27
+
+### Added
+- **I/O Bandwidth Throttling (IoBandwidthThrottler)** — dynamically lowers I/O priority of background processes when disk queue pressure exceeds threshold; automatically restores priority once pressure normalizes with 30s cooldown
+- **Disk queue monitoring** — reads `getDiskQueueLength()` from NTAPI; triggers on queue >= 2.0 (configurable)
+- **Process protection** — skips RAMFlux, svchost, system, csrss, winlogon, services, and self
+- **`FluxScheduler::applyIoBandwidthThrottling()`** — new method called every 5s when enabled
+
+### Changed
+- **FluxScheduler** — new `IoBandwidthThrottler` member; `m_iobandwidthEnabled` flag; getter/setter methods
+- **CMakeLists.txt** — added `IoBandwidthThrottler.cpp/h` to `SCHEDULER_SOURCES` and header list
+- Version bumped to 2.20.0
+
 ## [2.19.0] — 2026-06-27
 
 ### Added
