@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.21.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.22.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,15 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.21.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.22.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.21.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.21.0) |
+| Latest Release | [v2.22.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.22.0) |
+
+### v2.22.0 — Event-Driven Architecture
+
+Expanded event system with 8 new event types; HeuristicEngine and FluxScheduler now post events on pressure change, hard fault storm, disk queue spike, and battery state transitions. Foundation for zero-polling reaction.
 
 ### v2.21.0 — Plugin System
 

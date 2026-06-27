@@ -1009,6 +1009,37 @@ main.cpp → registers PluginManager → startup scans plugins/ → scheduler lo
 - Scheduler loop fetches via `core.moduleManager().getModule("PluginManager")`
 - Calls `executeAllWithTimeout()` each cycle when enabled
 
+## Event-Driven Architecture (v2.22.0)
+
+The EventBus (`src/core/EventBus.h`) provides publish/subscribe messaging. With v2.22.0, strategic modules post events on state transitions, enabling subscribers to react immediately instead of polling.
+
+**Event Producers:**
+| Module | Events Posted | Trigger |
+|--------|--------------|---------|
+| HeuristicEngine | `PressureChanged`, `PressureDropped` | Pressure level transition |
+| HeuristicEngine | `HardFaultStorm`, `HardFaultStormCleared` | stormWarning edge |
+| FluxScheduler | `DiskQueueHigh`, `DiskQueueNormalized` | Disk queue threshold |
+| FluxScheduler | `BatteryLow`, `BatteryNormalized` | Battery boost toggle |
+| FluxCleaner | `CleaningStarted`, `CleaningFinished` | Clean cycle begin/end |
+| HeuristicEngine | `WorkloadChanged` | Workload type transition |
+| HeuristicEngine | `AnomalyDetected` | Statistical anomaly |
+| HeuristicEngine | `PressurePredicted` | High pressure forecast |
+
+**Existing Subscribers:**
+- `IoCostTracker` — subscribes to `CleaningStarted`/`CleaningFinished` to track I/O cost
+
+**Edge Detection Pattern:**
+```
+evaluateAndPost():
+  newLevel = determineLevel(predictedPressure)
+  if newLevel != m_lastPressureLevel:
+    post(PressureChanged)
+    if newLevel <= Normal: post(PressureDropped)
+    m_lastPressureLevel = newLevel
+```
+
+**Dispatched via:** dedicated `std::jthread` with condition variable — queued events processed asynchronously.
+
 ## Power Plan Automation (v2.12.0)
 
 Dynamically switches Windows power plans based on workload:

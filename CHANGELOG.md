@@ -5,6 +5,22 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.22.0] — 2026-06-27
+
+### Added
+- **Event-Driven Architecture** — expanded `EventType` enum with 8 new events: `PressureChanged`, `PressureDropped`, `HardFaultStorm`, `HardFaultStormCleared`, `DiskQueueHigh`, `DiskQueueNormalized`, `BatteryLow`, `BatteryNormalized`
+- **Event publishing** — HeuristicEngine posts pressure/storm events from `evaluateAndPost()`; FluxScheduler posts disk queue and battery events from scheduler loop and `setBatteryBoost()`
+- **Edge detection** — pressure change, storm state, disk queue threshold, and battery state transitions are detected and published only on state change (not every cycle)
+- **Zero-polling foundation** — modules can now subscribe to events instead of polling, enabling immediate reaction times and reduced CPU overhead
+
+### Changed
+- **Constants.h** — `EventType` enum expanded from 18 to 26 values; `EventTypeNames` array updated
+- **HeuristicEngine.h** — added `m_lastPressureLevel`, `m_lastStormWarning` for edge detection
+- **HeuristicEngine.cpp** — posts events on pressure level change, storm start/end
+- **FluxScheduler.h** — added `m_lastDiskQueueHigh`, `m_lastBatteryLow` for edge detection
+- **FluxScheduler.cpp** — posts DiskQueueHigh/Normalized events each cycle; posts BatteryLow/Normalized on setBatteryBoost
+- Version bumped to 2.22.0
+
 ## [2.21.0] — 2026-06-27
 
 ### Added

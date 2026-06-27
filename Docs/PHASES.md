@@ -891,6 +891,47 @@ Provide a lightweight DLL-based plugin architecture that allows users to define 
 
 ---
 
+## Phase 37 — Event-Driven Architecture (v2.22.0)
+
+### Objective
+Move from pure polling (scheduler loop checks every N ms) toward event-driven reaction: modules publish events when state changes, and subscribers react immediately instead of waiting for the next poll cycle.
+
+### Implementation
+
+**New Event Types (Constants.h):**
+- `PressureChanged` — posted when pressure level transitions (Idle/Normal/High/Critical)
+- `PressureDropped` — posted when pressure drops to Normal or below
+- `HardFaultStorm` — posted when stormWarning transitions false→true
+- `HardFaultStormCleared` — posted when stormWarning transitions true→false
+- `DiskQueueHigh` — posted when disk queue exceeds threshold
+- `DiskQueueNormalized` — posted when disk queue drops below threshold
+- `BatteryLow` — posted on battery boost activation
+- `BatteryNormalized` — posted on battery boost deactivation
+
+**Edge Detection:**
+- HeuristicEngine: tracks `m_lastPressureLevel`, `m_lastStormWarning` — posts on any change
+- FluxScheduler: tracks `m_lastDiskQueueHigh`, `m_lastBatteryLow` — posts on threshold crossings
+- No duplicate events; only posts on actual state transitions
+
+**Events enable immediate module reaction:**
+- EventBus dispatch thread processes events asynchronously
+- Existing subscribers (IoCostTracker before/after clean) already use events
+- Future modules can subscribe to new events to eliminate polling entirely
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/shared/Constants.h` | 8 new EventType values; EventTypeNames updated |
+| `src/ai/HeuristicEngine.h` | Added m_lastPressureLevel, m_lastStormWarning |
+| `src/ai/HeuristicEngine.cpp` | Posts pressure/storm events in evaluateAndPost |
+| `src/scheduler/FluxScheduler.h` | Added m_lastDiskQueueHigh, m_lastBatteryLow |
+| `src/scheduler/FluxScheduler.cpp` | Posts disk queue/battery events; includes EventBus |
+| `CMakeLists.txt` | Version bumped to 2.22.0 |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:
