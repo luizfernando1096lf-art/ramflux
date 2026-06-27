@@ -932,6 +932,40 @@ Move from pure polling (scheduler loop checks every N ms) toward event-driven re
 
 ---
 
+## Phase 38 — Telemetry & Forecasting Dashboard (v2.23.0)
+
+### Objective
+Create a dedicated "Forecast" UI tab showing real-time pressure predictions, historical accuracy, ML engine status, and trend analysis — providing users with actionable insight into future memory pressure.
+
+### Implementation
+
+**ForecastWidget (`src/ui/ForecastWidget.h/.cpp`):**
+- 5-line pressure forecast chart using QtCharts:
+  - Actual pressure (blue solid line) — rolling 120-sample window
+  - Past predictions (green dashed) — for accuracy comparison
+  - 30s forecast (red dotted) — near-term projection
+  - 60s forecast (dark red dotted) — medium-term projection  
+  - 120s forecast (magenta dotted) — long-term projection
+- AI Metrics panel: accuracy %, total/correct/FP/FN counts, ML score, confidence %, trend
+
+**Integration:**
+- New "Forecast" tab added after Heatmap in MainWindow
+- `m_forecastWidget->updateForecast(...)` called every UI cycle from `updateAIInfo()`
+- Data sourced from `HeuristicEngine::currentReport()` — pressure predictions, effectiveness metrics, ML engine status
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/ui/ForecastWidget.h` | New — ForecastWidget class with QChart, labels, table |
+| `src/ui/ForecastWidget.cpp` | New — chart setup, forecast lines, metrics display, update logic |
+| `src/ui/MainWindow.h` | Added ForecastWidget* member |
+| `src/ui/MainWindow.cpp` | Added Forecast tab; wire forecast update in updateAIInfo() |
+| `CMakeLists.txt` | Added ForecastWidget.cpp/h, ThemeManager.cpp/h (fix); bumped to 2.23.0 |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:

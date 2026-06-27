@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.23.0] — 2026-06-27
+
+### Added
+- **Forecast Tab (ForecastWidget)** — new UI tab showing real-time pressure forecasting with actual vs predicted overlay chart, 30s/60s/120s forecast lines, prediction accuracy metrics, ML engine status, and trend analysis
+- **Pressure Forecast Chart** — 5-line QChart: actual pressure (blue solid), past predictions (green dashed), 30s forecast (red dotted), 60s forecast (dark red dotted), 120s forecast (magenta dotted); 120-sample rolling window
+- **AI Metrics Panel** — accuracy %, total/correct/FP/FN counts, ML score + sample count, confidence %, trend direction + slope
+- **Forecast Metrics Table** — 4-row table (Pressure, Confidence, ML Score, Trend) with current and forecast columns
+
+### Changed
+- **MainWindow** — new "Forecast" tab after Heatmap; `m_forecastWidget` updated every UI cycle via `updateAIInfo()`
+- **CMakeLists.txt** — added `ForecastWidget.cpp/h` and `ThemeManager.cpp/h` (missing dependency) to build
+- Version bumped to 2.23.0
+
 ## [2.22.0] — 2026-06-27
 
 ### Added

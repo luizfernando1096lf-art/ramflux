@@ -352,6 +352,23 @@ The Heatmap tab (`MemoryHeatmapWidget`, `src/ui/MemoryHeatmapWidget.h/cpp`) prov
 
 The widget uses `QPainter` for custom rendering with `setMouseTracking(true)` for hover detection.
 
+## Telemetry & Forecasting Dashboard — ForecastWidget (v2.23.0)
+
+**Location:** `src/ui/ForecastWidget.h/.cpp`
+
+The Forecast tab displays real-time pressure forecasting with actual vs predicted overlay chart, prediction accuracy metrics, ML engine status, and trend analysis — providing users with actionable insight into future memory pressure.
+
+**Chart (QChart, 5 series):**
+- **Actual Pressure** (blue solid) — rolling 120-sample window of observed pressure
+- **Past Predictions** (green dashed) — predictions made at past timestamps for accuracy comparison
+- **Forecast 30s** (red dotted) — near-term projection from current point to 30s ahead
+- **Forecast 60s** (dark red dotted) — medium-term projection from current point to 60s ahead
+- **Forecast 120s** (magenta dotted) — long-term projection from current point to 120s ahead
+
+**Data sourced from:** `HeuristicEngine::currentReport()` — pressure predictions, `EffectivenessMetrics`, ML engine status (`mlScore`, `mlSampleCount`, `mlConfidence`)
+
+**Update cycle:** every 2s via `onMemoryUpdated()` → `updateAIInfo()` → `m_forecastWidget->updateForecast()`
+
 ## Standby List Inteligente (v2.14.0)
 
 The intelligent standby list subsystem elevates page priority of critical processes before flushing the standby list, preserving their cached pages for faster recall.
