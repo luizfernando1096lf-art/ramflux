@@ -705,6 +705,172 @@ evaluateCosts():
 - High alpha → reacts quickly to recent cleans (good for changing workloads)
 - Configurable via `setAlpha()`
 
+## Per-Process Standby Scanner — StandbyScanner (v2.16.0)
+
+The StandbyScanner attributes standby list pages to their owning processes using statistical inference — no kernel driver required.
+
+**Location:** `src/ai/StandbyScanner.h/.cpp`
+
+### Challenge
+Windows exposes total standby size via `NtQuerySystemInformation(SystemMemoryListInformation)` but does not provide a public API for per-process standby page attribution. Kernel-mode access would be required for exact PFN→process mapping.
+
+### Solution: Working Set Delta Inference
+The StandbyScanner uses a two-sample detection approach:
+
+1. **Every 30s**, take a `WsSample` snapshot:
+   - Total standby bytes via `getStandbyMemorySize()`
+   - Per-process page fault counts and working set sizes from `ProcessCache`
+
+2. **Detect clean events**: When standby total drops by >256MB between samples, a cleaning event occurred.
+
+3. **Attribute freed pages**: For each process, compute attribution score:
+   - `faultDelta = after.pageFaults[pid] - before.pageFaults[pid]`
+   - `wsWeight = before.workingSet[pid] / totalWsBefore`
+   - `score = faultDelta * (1.0 + wsWeight)`
+   - Processes with more hard faults after cleaning likely owned more standby pages
+
+4. **EMA update**: `standbyBytes = 0.7 * prev + 0.3 * inferred`
+
+5. **Fallback**: When no clean events detected, distribute proportionally by working set size
+
+### Cache & Integration
+- `StandbyScanner::refresh()` calls `NtApi::setProcessStandbyCache()` with latest estimates
+- `NtApi::getProcessStandbyMemory(pid)` reads from a static mutex-protected cache in `FluxNTAPI.cpp`
+- `MemoryCollector::collectProcesses()` now populates `ProcessMemoryBreakdown::standbyMemory` from this cache
+- Owned by `HeuristicEngine` as `m_standbyScanner`; `refresh()` called every `evaluateAndPost()`
+
+### Data Structures
+- **`ProcessStandbyEntry`**: pid, name, `standbyBytes`, `workingSet`, `sampleCount`, `confidence`
+- **`StandbyReport`**: `topProcesses` (vector), `totalTrackedBytes`, `trackedProcesses`, `totalSamples`, `hasRealData`
+- **Storage**: `unordered_map<pid, ProcessStandbyEntry>` — one entry per observed process
+
+### Accuracy
+- `confidence = min(1.0, sampleCount / 10.0)` — reaches full confidence after 10 clean events
+- Statistical: not exact per-page, but provides a reliable ranking of top standby consumers
+- Over many samples, the signal (hard faults from cleaned pages) dominates the noise (normal page faults)
+
+## Predictive Page Prefetch — PagePrefetcher (v2.17.0)
+
+Proactive prefetch that brings pages back from standby/disk **before** a predicted hard fault storm, reducing I/O latency.
+
+**Location:** `src/ai/PagePrefetcher.h/.cpp`
+
+### Trigger Conditions
+Prefetch fires when either:
+1. **ML score ≥ 50** — the ML Engine predicts a significant hard fault increase in 30s
+2. **Storm warning** — HardFaultPredictor detects an imminent storm (severity ≥ High + rising slope + low standby)
+
+### Rate Limiting
+- Maximum 1 prefetch per 60s (`PREFETCH_COOLDOWN_SEC`)
+- Up to 3 target processes per prefetch (`MAX_PREFETCH_PROCESSES`)
+- Up to 1024 pages per process per prefetch (`MAX_PAGES_PER_PROCESS`)
+- Page address cache refreshed every 120s (`PAGE_COLLECT_INTERVAL_SEC`)
+
+### Page Address Collection (`collectForPid`)
+Uses `VirtualQueryEx` to enumerate the process's committed memory regions:
+- Scans up to 512 regions per process
+- For each `MEM_COMMIT` region with read/write/execute protection, samples pages evenly across the region's address space
+- Collects up to 1024 page addresses per process
+
+### Candidate Selection
+Processes are scored using a weighted combination:
+- **IoCost score** (from IoCostTracker) — processes that cause high I/O after cleaning
+- **Standby bytes** (from StandbyScanner) — processes with large standby cache footprints
+
+Top 3 processes by combined score are prefetched.
+
+### Integration
+- Owned by `HeuristicEngine` as `m_pagePrefetcher`
+- `refresh()` called every `evaluateAndPost()` — evicts stale page caches
+- `tryPrefetch()` called after building `HeuristicReport` with ML score, storm warning, IoCost list, and standby list
+- `PrefetchReport` stored in `HeuristicReport.prefetch`
+- Uses `NtApi::prefetchProcessPages()` which wraps `PrefetchVirtualMemory` (Win8+)
+
+### Data Structures
+- **`PrefetchReport`**: `triggered`, `processesTargeted`, `pagesPrefetched`, `bytesPrefetched`, `reason` (storm_warning/ml_score_N), `rateLimited`, `totalPrefetches`, `totalPagesEver`
+- **`PageCache`** (private): `addresses` (vector of page VAs), `collectedAt` timestamp
+- **Storage**: `unordered_map<pid, PageCache>` — one cache entry per process, auto-evicted after 240s idle
+
+### Metrics
+- Logged at `INFO` level on each prefetch: "PagePrefetcher Prefetch N processes, M pages (XKB) — reason: Y"
+- `totalPrefetches` and `totalPagesEver` accumulate across the session
+
+## Memory QoS — MemoryQoS (v2.18.0)
+
+Per-process memory SLAs with automatic enforcement — the first user-mode QoS layer for Windows memory management.
+
+**Location:** `src/qos/MemoryQoS.h/.cpp`
+
+### Architecture
+```
+User defines rules → MemoryQoS → enforce(snap) → NTAPI (firewall/priority/eco)
+                         ↓
+                  QoSEnforcement (actions + violations)
+                         ↓
+                  HeuristicReport::qos
+```
+
+### QoSRule Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| `processPattern` | `wstring` | Name pattern with wildcard (`*` suffix), e.g. `chrome*` |
+| `minWorkingSetBytes` | `uint64_t` | Minimum WS — violation logged if below |
+| `maxWorkingSetBytes` | `uint64_t` | Maximum WS — enforced via Job Object firewall |
+| `maxCommitBytes` | `uint64_t` | Commit cap — violation + optional kill |
+| `pagePriority` | `int` | Page priority (-1 = no change, 0-7) |
+| `ioPriority` | `int` | I/O priority (-1 = no change, 0-2) |
+| `efficiencyMode` | `bool` | EcoQoS power throttling (Win10 1809+) |
+| `killOnViolation` | `bool` | Terminate process on commit violation |
+
+### Enforcement (`enforce`)
+Called every 5s from `HeuristicEngine::evaluateAndPost()`:
+1. Iterates all active `QoSRule`s
+2. Matches against each process name from `ProcessCache` (case-insensitive, `*` wildcard)
+3. Applies actions: firewall limit, page priority, I/O priority, efficiency mode
+4. Checks violations: WS below minimum, commit above maximum
+5. On commit violation + `killOnViolation=true`: terminates process via `TerminateProcess`
+
+### Pattern Matching
+- `"chrome*"` matches `chrome.exe`, `chromedriver.exe`, `chrome_background.exe` etc.
+- `"firefox.exe"` matches only the exact name
+- Empty pattern matches nothing
+
+### Integration
+- Owned by `HeuristicEngine` as `m_qos`
+- `m_qos.enforce(snap)` called each `evaluateAndPost()` cycle
+- `QoSEnforcement` stored in `HeuristicReport.qos`
+- Logs at `INFO` level: "MemoryQoS Enforce: N rules, M actions, V violations"
+
+## Cross-Process Memory Dedup — MemoryDedup (v2.19.0)
+
+**Location:** `src/dedup/MemoryDedup.h/.cpp`
+
+The MemoryDedup module detects duplicate memory pages across processes to estimate potential RAM savings from page combining. Since Windows does not expose `MiCombineHashPages` via public API, this is a **detection-only** feature — the user sees estimated savings but pages cannot be deduped without a kernel driver.
+
+**Flow:**
+```
+ProcessCache → top-10 by WS → VirtualQueryEx → sample pages → FNV-1a 64-bit hash → group by hash → report duplicates
+```
+
+- **Zero-page detection**: reads full 4KB page, compares all qwords vs zero — identifies processes wasting RAM on zeroed private pages (fast path, early exit on first non-zero qword)
+- **Content hash detection**: full 4KB page read + FNV-1a 64-bit hash; pages with identical hash across processes form a `DedupCandidateGroup`
+- **Two-phase scan**: zero pages bypass FNV computation (hash = 0); content pages use the full hash pipeline
+- **Savings estimation**: zero savings = zeroPages × 4KB; cross-process savings = (groupSize - uniquePids) × 4KB
+- **Rate-limited**: 120s interval to avoid overhead
+
+### Scan Strategy
+- Top-10 processes by `workingSet` from ProcessCache
+- 512 pages per process max
+- 256 region limit from VirtualQueryEx
+- Sampled at 1-in-3 pages within each committed private RW region
+- Handle fallback via `ScopedPrivilege(SE_DEBUG_NAME)`
+
+### Data Structures
+- **`QoSRule`**: rule definition with all constraint fields
+- **`QoSViolation`**: pid, name, reason string, timestamp, resolved flag
+- **`QoSEnforcement`**: `rulesApplied`, `violationsFound`, `actionsTaken`, `totalRules`, `activeViolations` vector
+- **Storage**: `vector<QoSRule>` — rules applied in order (last match wins for overlapping patterns)
+
 ## Mining Mode (v2.14.0)
 
 New mode parallel to Game Mode for cryptocurrency mining workloads:

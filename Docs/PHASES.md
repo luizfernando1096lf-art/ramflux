@@ -667,6 +667,161 @@ A feature release introducing machine learning prediction and I/O cost measureme
 
 ---
 
+## Phase 31 — Per-Process Standby Enumeration (v2.16.0)
+
+### Objective
+Attribute standby list pages to their owning processes, giving RAMFlux a unique capability unavailable in any other user-mode tool.
+
+### Implementation
+
+**StandbyScanner (`src/ai/StandbyScanner.h/.cpp`):**
+- Working set delta inference: samples total standby + per-process page faults every 30s
+- Detects clean events when standby drops by >256MB between samples
+- Attributes freed pages proportionally: `score = faultDelta * (1 + wsWeight)`
+- EMA smoothing (α=0.3) for stable estimates
+- `confidence = min(1.0, sampleCount / 10.0)` after 10 clean events
+
+**Integration:**
+- `NtApi::setProcessStandbyCache()` — static mutex-protected cache in FluxNTAPI
+- `NtApi::getProcessStandbyMemory(pid)` — reads from cache, replaces zero stub
+- `MemoryCollector::collectProcesses()` — populates `ProcessMemoryBreakdown::standbyMemory`
+- `HeuristicEngine` — owns `m_standbyScanner`, calls `refresh()` each cycle
+- `HeuristicReport::standby` — new `StandbyReport` field
+
+**Design Decisions:**
+- No kernel driver required — pure statistical inference
+- Falls back to proportional-by-WS attribution when no clean events detected
+- `topStandby()` returns ranked list via `nth_element` + partial sort
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/ai/StandbyScanner.h` | New — scanner class + data structs |
+| `src/ai/StandbyScanner.cpp` | New — inference engine |
+| `src/ntapi/FluxNTAPI.h` | Added `setProcessStandbyCache()` declaration |
+| `src/ntapi/FluxNTAPI.cpp` | Static cache + getter/setter, replaces zero stub |
+| `src/telemetry/MemoryCollector.cpp` | Populates `standbyMemory` field |
+| `src/ai/HeuristicEngine.h` | Added StandbyScanner member + report field |
+| `src/ai/HeuristicEngine.cpp` | Calls `m_standbyScanner.refresh()` each cycle |
+| `CMakeLists.txt` | Added `StandbyScanner.cpp` to AI_SOURCES |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
+## Phase 32 — Predictive Page Prefetch (v2.17.0)
+
+### Objective
+Prevent hard fault storms by prefetching pages back into the working set before they're needed, using ML predictions and I/O cost signals to select target processes.
+
+### Implementation
+
+**PagePrefetcher (`src/ai/PagePrefetcher.h/.cpp`):**
+- `collectForPid()` — enumerates committed memory regions via `VirtualQueryEx`, samples up to 1024 page addresses per process
+- `selectCandidates()` — scores processes by IoCost + standby bytes, returns top 3
+- `tryPrefetch()` — triggered by storm warning or ML score ≥ 50; calls `NtApi::prefetchProcessPages()` on cached addresses
+- Rate-limited: 60s cooldown, max 3 processes, 1024 pages each
+- Page cache refreshed every 120s, auto-evicted after 240s idle
+
+**Integration:**
+- `HeuristicEngine` — owns `m_pagePrefetcher`; calls `refresh()` and `tryPrefetch()` each cycle
+- `HeuristicReport::prefetch` — `PrefetchReport` with trigger reason, pages, bytes, rate-limit status
+- Uses existing `NtApi::prefetchProcessPages()` (wraps `PrefetchVirtualMemory` from Win8+)
+
+**Trigger Logic:**
+- `stormWarning` from HardFaultPredictor (severity ≥ High + rising slope + low standby)
+- `mlScore ≥ 50` from ML Engine
+- First valid trigger after 60s cooldown fires prefetch
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/ai/PagePrefetcher.h` | New — prefetcher class + PrefetchReport struct |
+| `src/ai/PagePrefetcher.cpp` | New — address collection, caching, prefetch logic |
+| `src/ai/HeuristicEngine.h` | Added `PagePrefetcher` member + report field |
+| `src/ai/HeuristicEngine.cpp` | Calls `refresh()` and `tryPrefetch()` each cycle |
+| `CMakeLists.txt` | Added `PagePrefetcher.cpp` to AI_SOURCES |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
+## Phase 33 — Memory QoS / SLA (v2.18.0)
+
+### Objective
+Provide per-process memory service-level agreements — min/max working set, commit caps, page priority, I/O priority, EcoQoS, and kill-on-violation — enforced automatically every cycle.
+
+### Implementation
+
+**MemoryQoS (`src/qos/MemoryQoS.h/.cpp`):**
+- `QoSRule` struct: `processPattern` (wildcard `*`), `minWorkingSetBytes`, `maxWorkingSetBytes`, `maxCommitBytes`, `pagePriority`, `ioPriority`, `efficiencyMode`, `killOnViolation`
+- `enforce(snap)` — iterates rules, matches process names, applies actions, checks violations
+- Pattern matching: case-insensitive, `*` suffix wildcard (`"chrome*"` matches `chrome.exe`)
+- Violation tracking: WS below minimum, commit above maximum; optional `TerminateProcess` on commit violation
+
+**Reuses existing NTAPI:**
+- `NtApi::setProcessMemoryLimit()` — Job Object-based working set firewall
+- `NtApi::setProcessPagePriority()` — page priority
+- `NtApi::setProcessIoPriority()` — I/O priority
+- `NtApi::setProcessEfficiencyMode()` — EcoQoS
+- `NtApi::getProcessMemoryFirewallRule()` — check existing rules to avoid redundant calls
+
+**Integration:**
+- `HeuristicEngine` — owns `m_qos`; calls `m_qos.enforce(snap)` each `evaluateAndPost()` cycle
+- `HeuristicReport::qos` — new `QoSEnforcement` field
+- 5s enforce interval to avoid thrashing
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/qos/MemoryQoS.h` | New — rule/enforcement structs + class |
+| `src/qos/MemoryQoS.cpp` | New — enforcement loop, pattern matching, action dispatch |
+| `src/ai/HeuristicEngine.h` | Added `MemoryQoS` member + report field |
+| `src/ai/HeuristicEngine.cpp` | Calls `m_qos.enforce(snap)` each cycle |
+| `CMakeLists.txt` | New `QOS_SOURCES` variable |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
+## Phase 34 — Cross-Process Memory Dedup (v2.19.0)
+
+### Objective
+Detect duplicate memory pages across processes using fast hashing, estimate potential RAM savings from hypothetical page combining, and flag processes with high zero-page ratios for trimming.
+
+### Implementation
+
+**MemoryDedup (`src/dedup/MemoryDedup.h/.cpp`):**
+- Zero-page detection: reads full 4KB page, compares all qwords against 0 — identifies processes wasting RAM on zeroed private pages
+- Content hash detection: FNV-1a 64-bit hash of 4KB pages; groups identical hashes across processes to find cross-process duplicate groups
+- `DedupCandidateGroup` — hash, page list (pid + VA per page), estimated savings
+- Two-phase approach: zero pages use fast-path (hash = 0, no FNV computation for content)
+
+**Scan strategy:**
+- Top-10 processes by `workingSet` from `ProcessCache`
+- 512 pages per process, 256 region limit, sampled at 1-in-3 pages within each region
+- 120s interval (runs every other heuristic cycle to avoid overhead)
+- Opens handles with `PROCESS_VM_READ | PROCESS_QUERY_INFORMATION`; falls back via `SE_DEBUG_NAME` privilege
+
+**Savings estimation:**
+- Per page: 4KB potential savings
+- Zero page savings: `zeroPages * 4KB`
+- Cross-process duplicate savings: `(totalPagesInGroup - uniquePids) * 4KB`
+- Total reported in `HeuristicReport::dedup`
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/dedup/MemoryDedup.h` | New — `MemoryDedup`, `DedupReport`, `DedupProcessStats`, `DedupCandidateGroup` |
+| `src/dedup/MemoryDedup.cpp` | New — FNV-1a 64-bit hashing, VQE scan, zero-page + content dedup, report |
+| `src/ai/HeuristicEngine.h` | Added `MemoryDedup` member + `DedupReport` field |
+| `src/ai/HeuristicEngine.cpp` | Calls `m_dedup.scan(snap)` each cycle |
+| `CMakeLists.txt` | New `DEDUP_SOURCES` variable; version bumped to 2.19.0 |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:

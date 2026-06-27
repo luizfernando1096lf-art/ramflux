@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.15.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,27 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.15.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.19.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.15.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.15.0) |
+| Latest Release | [v2.19.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.19.0) |
+
+### v2.19.0 — Cross-Process Memory Dedup
+
+Detects duplicate memory pages across processes using FNV-1a 64-bit hashing; identifies zero pages and cross-process duplicate groups; estimates potential RAM savings from page combining.
+
+### v2.18.0 — Memory QoS / SLA
+
+Per-process memory SLAs with automatic enforcement — min/max working set, page priority, I/O priority, EcoQoS, and kill-on-violation.
+
+### v2.17.0 — Predictive Page Prefetch
+
+PrefetchVirtualMemory-based proactive prefetch to prevent hard fault storms before they happen.
+
+### v2.16.0 — Per-Process Standby Scanner
+
+Per-process standby list enumeration using statistical inference — no kernel driver required.
 
 ### v2.15.0 — ML Engine & I/O Cost Tracker
 - **EcoQoS (Efficiency Mode)** — background processes put into CPU efficiency mode via `SetProcessInformation(ProcessPowerThrottling)`; reduces battery/heat on notebooks (Win 10 1809+)
