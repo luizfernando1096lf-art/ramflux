@@ -5,6 +5,22 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.21.0] — 2026-06-27
+
+### Added
+- **Plugin System (PluginManager)** — lightweight DLL-based plugin sandbox for user-defined optimization routines; plugins expose `createPlugin()`/`destroyPlugin()` exported symbols
+- **`IPlugin` interface** — `info()`, `initialize(ctx)`, `execute()`, `shutdown()` — plugins receive a whitelisted `IPluginContext` with safe read-only memory queries and limited actions
+- **`IPluginContext`** — exposes `log()`, `getFreeMemoryBytes()`, `getStandbyMemoryBytes()`, `getDiskQueueLength()`, `getTotalPhysicalMemory()`, `setProcessPriority()`, `setProcessIoPriority()`, `getProcessCount()`, `getProcessInfo()` (static ProcessCache snapshot)
+- **Sandbox constraints** — `executeAllWithTimeout()` with 5s per-plugin timeout via `std::async`/`std::future`; plugins loaded with `LOAD_LIBRARY_SEARCH_APPLICATION_DIR` for search path safety
+- **Plugin discovery** — scans `plugins/` directory for `.dll` files at startup; creates directory if missing
+- **`HeuristicReport`** — (unchanged) plugin results included in evaluation cycle
+- **Pluggable architecture** — new `src/plugins/` directory with `IPlugin.h`, `PluginManager.h/.cpp`
+
+### Changed
+- **main.cpp** — registers `PluginManager` in `ModuleManager` before bootstrap
+- **FluxScheduler** — plugin execution added to scheduler loop (via `executeAllWithTimeout()`) when module is enabled
+- **CMakeLists.txt** — new `PLUGIN_SOURCES` variable added to build
+
 ## [2.20.0] — 2026-06-27
 
 ### Added

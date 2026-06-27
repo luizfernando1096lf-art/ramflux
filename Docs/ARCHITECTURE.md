@@ -968,6 +968,47 @@ The CpuLimiter subsystem limits background process CPU usage via Windows Job Obj
 - Auto-capped at 20-80% depending on slider level (10=20%, 0=disabled)
 - Independent enable via `setCpuLimiterEnabled()` / `setCpuLimitPercent()`
 
+## Plugin System — PluginManager (v2.21.0)
+
+**Location:** `src/plugins/IPlugin.h`, `src/plugins/PluginManager.h/.cpp`
+
+The Plugin System provides a lightweight DLL-based sandbox for user-defined optimization routines. Plugins implement the `IPlugin` interface and receive a whitelisted `IPluginContext` for safe system interaction.
+
+**Flow:**
+```
+main.cpp → registers PluginManager → startup scans plugins/ → scheduler loop → executeAllWithTimeout()
+```
+
+**Interface:**
+- `IPlugin` — `info()`, `initialize(IPluginContext*)`, `execute()`, `shutdown()` 
+- `IPluginContext` — read-only queries (free/standby/total memory, disk queue, process enumeration) + safe actions (set process/I/O priority)
+- Exported symbols: `createPlugin()` / `destroyPlugin()` — standard DLL entry points
+
+**Sandbox Constraints:**
+- `LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR` for safe loading
+- 5s per-plugin timeout via `std::async`/`std::future::wait_for`
+- Warnings for plugins exceeding 500ms execution time
+- Suppressed during battery boost mode
+- Plugin directory auto-created at `plugins/` if missing
+
+**Context Whitelist:**
+| Method | Returns | Safe? |
+|--------|---------|-------|
+| `log(message)` | void | ✅ Read-only |
+| `getFreeMemoryBytes()` | uint64_t | ✅ Read-only |
+| `getStandbyMemoryBytes()` | uint64_t | ✅ Read-only |
+| `getDiskQueueLength()` | double | ✅ Read-only |
+| `getTotalPhysicalMemory()` | uint64_t | ✅ Read-only |
+| `getProcessCount()` | uint32_t | ✅ Read-only |
+| `getProcessInfo(index, ...)` | bool | ✅ Read-only (static snapshot) |
+| `setProcessPriority(pid, class)` | bool | ⚠️ Constrained (same as UI) |
+| `setProcessIoPriority(pid, prio)` | bool | ⚠️ Constrained (same as scheduler) |
+
+**Integration:**
+- `PluginManager` registered as IModule in `ModuleManager`
+- Scheduler loop fetches via `core.moduleManager().getModule("PluginManager")`
+- Calls `executeAllWithTimeout()` each cycle when enabled
+
 ## Power Plan Automation (v2.12.0)
 
 Dynamically switches Windows power plans based on workload:

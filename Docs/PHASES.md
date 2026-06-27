@@ -853,6 +853,44 @@ Dynamically cap background process I/O bandwidth during high disk pressure to pr
 
 ---
 
+## Phase 36 — Plugin System (v2.21.0)
+
+### Objective
+Provide a lightweight DLL-based plugin architecture that allows users to define custom RAM optimization routines executed in the heuristic cycle with timeouts and a sandboxed API.
+
+### Implementation
+
+**IPlugin (`src/plugins/IPlugin.h`):**
+- `PluginInfo` struct: name, version, description, author
+- `IPlugin` interface: `info()`, `initialize(IPluginContext*)`, `execute()`, `shutdown()`
+- `IPluginContext` whitelist: read-only memory queries (free/standby/total), disk queue, process enumeration, safe actions (set priority)
+- Export symbols: `createPlugin()` / `destroyPlugin()` — DLL entry points
+
+**PluginManager (`src/plugins/PluginManager.h/.cpp`):**
+- Loads `.dll` files from `plugins/` directory via `LoadLibraryExW` with restricted search (APPLICATION_DIR + DLL_LOAD_DIR)
+- `executeAllWithTimeout()` — runs each plugin in async thread with 5s timeout via `std::async`/`std::future`
+- Registers as IModule in ModuleManager; called from FluxScheduler scheduler loop
+- Plugin execution suppressed during battery boost
+
+### Integration
+- `PluginManager` registered in `main.cpp` before `core.bootstrap()`
+- Scheduler loop fetches `PluginManager` from ModuleManager and calls `executeAllWithTimeout()`
+- Logs slow plugins (>500ms) and timed-out plugins (>5s)
+
+### Files Modified/Created
+| File | Change |
+|------|--------|
+| `src/plugins/IPlugin.h` | New — IPlugin interface + IPluginContext + PluginInfo struct |
+| `src/plugins/PluginManager.h` | New — PluginManager class with LoadedPlugin struct |
+| `src/plugins/PluginManager.cpp` | New — DLL loading, sandboxed execution, timeout, context impl |
+| `src/main.cpp` | Registers PluginManager in ModuleManager |
+| `src/scheduler/FluxScheduler.cpp` | Plugin execution in scheduler loop |
+| `CMakeLists.txt` | New `PLUGIN_SOURCES` variable; version bumped to 2.21.0 |
+
+**Build:** MinGW 13.1.0, Qt 6.11.0, deployed to `C:\RAMFlux`
+
+---
+
 # FINAL TARGET
 
 RAMFlux should become:
