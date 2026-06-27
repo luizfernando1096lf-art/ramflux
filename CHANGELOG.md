@@ -5,6 +5,20 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.24.0] — 2026-06-27
+
+### Added
+- **Hibernate Assist (HibernateAssist)** — intelligent hibernation advisor that monitors system idle time and memory pressure; recommends or auto-triggers hibernate when both are elevated
+- **`HibernateAdvice`** — result struct with `recommendHibernate`, `recommendSleep`, idle time, pressure score, reason string
+- **Idle tracking** — reads user inactivity via `GetLastInputInfo` (minutes); configurable threshold (default 30 min)
+- **Pressure threshold** — only triggers when pressure exceeds configurable score (default 75); auto-hibernate option
+- **Action** — calls `SetSuspendState` with `SE_SHUTDOWN_NAME` privilege; supports manual `forceHibernate()`/`forceSleep()`
+- **Cooldown** — 15-minute cooldown between advice emissions to avoid spamming
+
+### Changed
+- **FluxScheduler** — new `HibernateAssist` member; `m_hibernateEnabled` flag; `applyHibernateAssist()` called each cycle
+- **CMakeLists.txt** — new `HIBERNATE_SOURCES` variable; links `powrprof`; version bumped to 2.24.0
+
 ## [2.23.0] — 2026-06-27
 
 ### Added
