@@ -5,6 +5,20 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.37.0] — 2026-06-27
+
+### Added
+- **Process Memory Classifier tab (ClassifierWidget)** — new "Classifier" tab showing per-process memory usage pattern classification (Unknown/Steady/Burst/Periodic/Leaky) with 8-column table
+- **Pattern coloring** — Leaky (red), Burst (yellow), Periodic (blue), Steady (green) for quick visual identification
+- **Classification metrics** — per-process display of confidence %, current/mean working set (GB), growth rate (MB/min), and textual recommendation (trim/monitor/ignore)
+- **Growth rate highlighting** — processes with ≥50 MB/min growth rate highlighted in red
+- **Tracked count** — info label shows total tracked process count
+- **Auto-refresh** — table updates every 5 seconds from FluxClassifier
+
+### Changed
+- **CMakeLists.txt** — added `ClassifierWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.37.0
+- **MainWindow** — added "Classifier" tab after Dedup tab (13th tab)
+
 ## [2.36.0] — 2026-06-27
 
 ### Added
