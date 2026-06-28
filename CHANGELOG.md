@@ -5,6 +5,18 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.38.0] — 2026-06-27
+
+### Added
+- **Page Prefetch tab (PrefetchWidget)** — new standalone tab showing live PagePrefetcher status with 5s auto-refresh
+- **Prefetch status** — dynamic status label (idle/green, rate-limited/yellow, success/green with reason)
+- **Prefetch metrics** — targets, pages prefetched, data size, total operations + total lifetime pages
+- **GroupBox layout** — compact single-panel design with status + horizontal metric row
+
+### Changed
+- **CMakeLists.txt** — added `PrefetchWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.38.0
+- **MainWindow** — added "Prefetch" tab after Classifier tab (14th tab)
+
 ## [2.37.0] — 2026-06-27
 
 ### Added
