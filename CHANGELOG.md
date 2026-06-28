@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.27.0] — 2026-06-27
+
+### Added
+- **Export/Import Configuration** — full state serialization to/from JSON files via File > Export/Import menu
+- **ConfigIO module** (`src/io/ConfigIO`) — `collectExportData()`, `exportToFile()`, `importFromFile()`, `applyImportData()` round-trip cycle
+- **Export data model** — `ExportData` struct with settings key-values, active profile index, custom profile config, and all process rules
+- **JSON serialization** — uses `QJsonDocument` for human-readable formatted JSON; includes version marker for forward compatibility
+- **Rule preservation** — exports all persistent and watchdog rules; clears existing rules on import and re-adds them (IDs reassigned)
+
+### Changed
+- **MainWindow** — new "Export Configuration..." and "Import Configuration..." actions in File menu; status bar feedback on completion
+- **CMakeLists.txt** — new `IO_SOURCES` variable; version bumped to 2.27.0
+
 ## [2.26.0] — 2026-06-27
 
 ### Added
