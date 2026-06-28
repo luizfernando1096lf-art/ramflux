@@ -5,6 +5,21 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.30.0] — 2026-06-27
+
+### Added
+- **Benchmark UI Widget (BenchmarkWidget)** — GUI interface for the existing CLI benchmark engine, accessible via new "Benchmark" tab
+- **Configuration panel** — spin boxes for baseline (10–600s), post-optimization (10–600s), pressure duration (5–300s), and a checkbox to skip the pressure phase
+- **Run/Cancel button** — starts benchmark on a background thread (`QThread`) to keep the UI responsive; cancels an in-progress run
+- **Live progress** — phase label, progress bar (0–100%), and detail text update in real time as the benchmark executes
+- **Results display** — shows efficiency score, free RAM/standby/hard fault/pressure improvements, total recovered MB, and detailed phase statistics (mean free RAM, standby, faults) for baseline and post-opt
+- **Open Report Folder** — opens `benchmark_results/YYYYMMDD_HHMMSS/` in Windows Explorer after completion
+- **Output directory** — each run creates a timestamped subdirectory named `benchmark_results/yyyyMMdd_HHmmss/`
+
+### Changed
+- **CMakeLists.txt** — added `BenchmarkWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.30.0
+- **MainWindow** — added "Benchmark" tab after Plugins tab, registered as the 11th tab
+
 ## [2.29.0] — 2026-06-27
 
 ### Added
