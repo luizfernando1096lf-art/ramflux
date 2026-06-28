@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.38.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.39.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,15 +186,15 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.38.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.39.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.38.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.38.0) |
+| Latest Release | [v2.39.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.39.0) |
 
-### v2.38.0 — Page Prefetch Tab
+### v2.39.0 — Memory QoS Enforcement Tab
 
-New standalone tab showing live PagePrefetcher status (idle/rate-limited/success) with targets, pages, data size, and total lifetime metrics. Auto-refreshes every 5 seconds.
+New tab showing QoS rules (8-column table), active violations (color-coded), enable/disable toggle, and enforcement statistics (rules applied/violations/actions). Auto-refreshes every 5 seconds.
 
 ### v2.28.0 — Plugin Browser & Scheduler Integration
 

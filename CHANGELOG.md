@@ -5,6 +5,20 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.39.0] — 2026-06-27
+
+### Added
+- **Memory QoS tab (QosWidget)** — new standalone tab with Rules table, Active Violations table, and enable/disable toggle
+- **QoS Rules table** — 8 columns: pattern, min/max working set, max commit, page priority, I/O priority, efficiency mode, kill-on-violation; auto-refreshes every 5s
+- **Active Violations table** — PID, process name, reason, resolved status; unresolved entries highlighted in red
+- **Enforcement stats** — summary line showing total rules, applied, violations, and actions taken
+- **Enable toggle** — checkbox to enable/disable QoS enforcement in real time
+
+### Changed
+- **HeuristicEngine** — added `qos()` public accessor returning `MemoryQoS&` (mirrors `dedup()` pattern)
+- **CMakeLists.txt** — added `QosWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.39.0
+- **MainWindow** — added "QoS" tab after Prefetch tab (15th tab)
+
 ## [2.38.0] — 2026-06-27
 
 ### Added
