@@ -5,6 +5,22 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.25.0] — 2026-06-27
+
+### Added
+- **System Health & Diagnostics Dashboard (HealthDashboardWidget)** — unified health monitoring UI with overall score gauge, five category breakdowns (Memory, Disk, I/O, Leaks, System), and actionable recommendations list
+- **DiagnosticsEngine** — periodic health evaluation thread (30s interval) that aggregates data from FluxTelemetry (pressure, faults, commit), disk space (GetDiskFreeSpaceEx), I/O queue (getDiskQueueLength), LeakHunter (active leaks), and system info (GlobalMemoryStatusEx)
+- **CategoryHealth scoring** — each category scored 0–100 with status labels (Good/Fair/Poor/Critical) and dynamic warning generation
+- **Overall health composition** — weighted score: Memory 35%, Leaks 20%, Disk 15%, I/O 15%, System 15%
+- **Health history** — scores tracked for trend analysis (last 120 samples)
+- **Callback subscription** — `onHealthUpdate`/`unsubscribe` pattern for real-time UI updates
+- **Recommendation engine** — picks top warning from each category and displays in scrollable list
+- **"Health" tab** in MainWindow — new tab with the complete dashboard
+
+### Changed
+- **CMakeLists.txt** — new `DIAGNOSTICS_SOURCES` variable; version bumped to 2.25.0
+- **MainWindow** — `m_healthWidget` and `m_diagnosticsEngine` members; engine started on init, stopped in destructor
+
 ## [2.24.0] — 2026-06-27
 
 ### Added
