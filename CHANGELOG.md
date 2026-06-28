@@ -5,6 +5,20 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.34.0] — 2026-06-27
+
+### Added
+- **Hibernate Assist UI (HibernateWidget)** — new panel in the System Info tab showing real-time idle time, memory pressure, and hibernate/sleep advice
+- **Advice status indicator** — color-coded label showing "HIBERNATE" (red), "SLEEP" (yellow), or "none needed" (green) with reason text
+- **Force Hibernate / Sleep buttons** — manual triggers to immediately hibernate or sleep the system
+- **Threshold controls** — idle threshold (5–240 min) and pressure threshold (10–100 pts) spinboxes with auto-hibernate checkbox
+- **Auto-hibernate toggle** — enables automatic hibernation when both idle time and pressure exceed configured thresholds
+- **Auto-refresh** — advice and metrics update every 3s
+
+### Changed
+- **CMakeLists.txt** — added `HibernateWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.34.0
+- **MainWindow** — added HibernateWidget to the System Info tab (after ResponsivenessSlider)
+
 ## [2.33.0] — 2026-06-27
 
 ### Added
