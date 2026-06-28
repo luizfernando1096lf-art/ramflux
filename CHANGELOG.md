@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.32.0] — 2026-06-27
+
+### Added
+- **I/O Bandwidth Throttle panel** — new section in the I/O tab showing disk queue length (color-coded green/red), throttled process count, enable/disable toggle, and disk queue threshold spinbox (0.5–10.0, step 0.5)
+- **Process I/O Cost table** — new section in the I/O tab showing top processes by AI-calculated I/O cost score from IoCostTracker, with color coding (red ≥50, yellow ≥25)
+- **Disk queue indicator** — real-time disk queue length reading updated every 3s, colored green when below threshold and red when at/above threshold
+- **Throttle live controls** — enable/disable I/O bandwidth throttling and adjust the disk queue threshold in real time from the I/O tab
+
+### Changed
+- **IoDashboardWidget** — redesigned with 6 sections: System I/O, Top Readers, Top Writers, I/O Bandwidth Throttle (new), Process I/O Cost (new); split setup into `setupThrottlePanel()` and `setupCostPanel()` helpers
+- **FluxScheduler::ioBandwidthThrottler()** — changed from const to non-const accessor to allow runtime threshold adjustment from UI
+- **CMakeLists.txt** — version bumped to 2.32.0
+
 ## [2.31.0] — 2026-06-27
 
 ### Added

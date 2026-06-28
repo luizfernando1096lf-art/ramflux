@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.31.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.32.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,15 +186,15 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.31.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.32.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.31.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.31.0) |
+| Latest Release | [v2.32.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.32.0) |
 
-### v2.31.0 — Memory Dedup Dashboard
+### v2.32.0 — I/O Management Dashboard
 
-New "Dedup" tab showing per-process zero-page and duplicate-page detection results with total estimated RAM savings. Includes a "Scan Now" button for on-demand scanning and auto-refresh every 3s.
+Enhanced I/O tab with live disk queue indicator, I/O bandwidth throttle controls (enable/disable + threshold tuning), throttled process count, and an AI-driven process I/O cost table color-coded by severity.
 
 ### v2.28.0 — Plugin Browser & Scheduler Integration
 
