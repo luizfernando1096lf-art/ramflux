@@ -5,6 +5,20 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.40.0] — 2026-06-27
+
+### Added
+- **Scheduler Dashboard tab (SchedulerDashboardWidget)** — new tab showing CPU Limiter, Process Suspender, Network QoS, and ML Engine status in grouped panels
+- **ML Engine panel** — live display of prediction score, confidence %, and sample count
+- **CPU Limiter panel** — enable status, limit %, process threshold, and count of currently limited processes
+- **Process Suspender panel** — enable status, suspend threshold, currently suspended count, and total suspended processes
+- **Network QoS panel** — enable status and count of prioritized processes
+- **Public accessors** — `CpuLimiter::limitedPids()`, `ProcessSuspender::suspendedPids()`, `NetworkQoS::prioritizedPids()`, and `FluxScheduler::cpuLimiter()/processSuspender()/networkQoS()` accessor methods
+
+### Changed
+- **CMakeLists.txt** — added `SchedulerDashboardWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.40.0
+- **MainWindow** — added "Scheduler" tab after QoS tab (16th tab)
+
 ## [2.39.0] — 2026-06-27
 
 ### Added
