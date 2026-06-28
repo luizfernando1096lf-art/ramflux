@@ -5,6 +5,21 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.28.0] — 2026-06-27
+
+### Added
+- **Plugin Browser (PluginBrowserWidget)** — new "Plugins" tab in MainWindow showing all loaded plugins in a table with name, version, author, status, and file path
+- **Plugin lifecycle management UI** — Refresh, Execute All, and Reload All buttons for runtime plugin management
+- **Plugin info dialog** — click any plugin row to view full metadata and description
+- **`plugins()` accessor** on PluginManager — exposes the internal LoadedPlugin vector for UI consumption
+- **Plugin execution in scheduler loop** — `executeAll()` called each scheduler cycle (when not on battery boost)
+
+### Changed
+- **PluginManager** — added `plugins()` const getter returning `const std::vector<LoadedPlugin>&`
+- **FluxScheduler** — calls `PluginManager::executeAll()` each cycle
+- **CMakeLists.txt** — added PluginBrowserWidget to UI_SOURCES; version bumped to 2.28.0
+- **MainWindow** — new "Plugins" tab added after Health tab
+
 ## [2.27.0] — 2026-06-27
 
 ### Added
