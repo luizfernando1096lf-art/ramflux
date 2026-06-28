@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.26.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,15 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.25.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.26.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.25.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.25.0) |
+| Latest Release | [v2.26.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.26.0) |
+
+### v2.26.0 — Power Manager
+
+Dedicated power management module with battery monitoring, auto battery boost on AC→battery transitions, power plan detection, and callback-based UI updates.
 
 ### v2.25.0 — System Health & Diagnostics Dashboard
 

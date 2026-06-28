@@ -5,6 +5,28 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.26.0] — 2026-06-27
+
+### Added
+- **Power Manager (PowerManager)** — dedicated IModule for power state monitoring, replacing inline code in MainWindow
+- **Battery monitoring thread** — polls `NtApi::getPowerStatus()` every 5s; detects AC↔battery transitions, charging state, and 5%+ changes in battery level
+- **Auto battery boost** — automatically enables scheduler battery boost and cleaner battery-aware mode when on battery; restores on AC
+- **Power plan detection** — reads active power plan name on each poll; detects plan switches
+- **PowerState struct** — `onAC`, `batteryPercent`, `batteryLifeSeconds`, `charging`, `activePlanName`, `planChanged`
+- **Callback subscription** — `onPowerStateChanged`/`unsubscribe` pattern for real-time UI updates
+- **PowerStateChanged event** — new Constants::EventType for EventBus subscribers
+
+### Changed
+- **MainWindow** — replaced `m_powerTimer` + `onPowerCheck()` + `setBatteryBoost()` with PowerManager callback subscription; new `updateBatteryDisplay()` slot
+- **Constants.h** — added `PowerStateChanged` to EventType enum and EventTypeNames array
+- **main.cpp** — PowerManager registered in module system
+- **CMakeLists.txt** — new `POWER_SOURCES` variable; version bumped to 2.26.0
+
+### Removed
+- **MainWindow::onPowerCheck()** — logic moved into PowerManager
+- **MainWindow::setBatteryBoost()** — logic moved into PowerManager::monitorLoop
+- **MainWindow::m_powerTimer** — replaced by PowerManager thread
+
 ## [2.25.0] — 2026-06-27
 
 ### Added
