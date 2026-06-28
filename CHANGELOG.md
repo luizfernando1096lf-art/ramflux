@@ -5,6 +5,21 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.31.0] — 2026-06-27
+
+### Added
+- **Memory Dedup Dashboard (DedupWidget)** — new "Dedup" tab showing per-process zero-page and duplicate-page detection results with estimated memory savings
+- **Process dedup table** — 6 columns: PID, process name, pages scanned, zero pages (highlighted if >30% ratio), duplicate pages, and estimated savings in MB
+- **Total savings display** — estimated aggregate RAM savings from cross-process page deduplication (shown in MB or GB)
+- **Last scan indicator** — displays seconds since last dedup scan
+- **Scan Now button** — triggers an immediate cross-process memory dedup scan using the latest telemetry snapshot
+- **Auto-refresh** — table and stats update every 3 seconds via polling of MemoryDedup::lastReport()
+
+### Changed
+- **CMakeLists.txt** — added `DedupWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.31.0
+- **MainWindow** — added "Dedup" tab after Benchmark tab (12th tab)
+- **HeuristicEngine** — added `dedup()` public accessor returning `MemoryDedup&` for direct dedup access
+
 ## [2.30.0] — 2026-06-27
 
 ### Added
