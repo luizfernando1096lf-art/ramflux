@@ -5,6 +5,18 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.36.0] — 2026-06-27
+
+### Added
+- **Standby Memory Widget (StandbyWidget)** — new panel in the System Info tab showing per-process standby cache allocation with PID, process name, standby bytes, working set, and inference confidence
+- **Standby table** — top processes sorted by standby allocation, color-coded: yellow ≥512 MB, green ≥256 MB
+- **Total tracking stats** — label showing number of tracked processes and total standby bytes monitored
+- **Auto-refresh** — data updates every 5 seconds from StandbyScanner (via HeuristicEngine report)
+
+### Changed
+- **CMakeLists.txt** — added `StandbyWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.36.0
+- **MainWindow** — added StandbyWidget to the System Info tab (after Power Plan panel)
+
 ## [2.35.0] — 2026-06-27
 
 ### Added
