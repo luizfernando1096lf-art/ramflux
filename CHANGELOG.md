@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.33.0] — 2026-06-27
+
+### Added
+- **Responsiveness Slider UI (ResponsivenessWidget)** — a real QSlider (0–10) in the System Info tab replacing the previously code-only slider concept, allowing users to dial between "Max Performance" (0) and "Max Responsiveness" (10)
+- **Level descriptions** — each of the 11 levels has a human-readable description explaining what policies it enables (CPU limiting, process suspension, network QoS, power plan automation)
+- **Policy indicators** — four live labels showing the current state of CPU cap, suspend threshold, network QoS, and power plan mode for the selected level
+- **Automatic policy propagation** — slider changes are immediately applied to CpuLimiter, ProcessSuspender, NetworkQoS, and PowerPlanAutomation through the existing ResponsivenessSlider engine
+
+### Changed
+- **CMakeLists.txt** — added `ResponsivenessWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.33.0
+- **MainWindow** — added ResponsivenessWidget to the System Info tab (after Memory Compression group)
+- **FluxScheduler** — exposed `setResponsivenessLevel()`, `responsivenessLevel()`, and `responsivenessSlider()` as public (was private); added inline getter for ResponsivenessSlider&
+
 ## [2.32.0] — 2026-06-27
 
 ### Added
