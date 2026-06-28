@@ -5,6 +5,18 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.35.0] — 2026-06-27
+
+### Added
+- **Power Plan Widget (PowerPlanWidget)** — new panel in the System Info tab showing AC/battery status, active power plan name, and a combo box to switch between available plans
+- **Auto-detection of plan control** — the combo box is automatically disabled when the Responsiveness Slider's power plan automation is active (showing a note explaining why)
+- **Plan switching** — selecting a plan from the combo immediately applies it via PowerManager::setPowerPlanByGuid()
+- **Auto-refresh** — status and plan list update every 5s
+
+### Changed
+- **CMakeLists.txt** — added `PowerPlanWidget.cpp/h` to `UI_SOURCES`; version bumped to 2.35.0
+- **MainWindow** — added PowerPlanWidget to the System Info tab (after Hibernate Assist)
+
 ## [2.34.0] — 2026-06-27
 
 ### Added
