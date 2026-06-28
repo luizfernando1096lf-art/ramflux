@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.29.0] — 2026-06-27
+
+### Added
+- **Auto-update checker (UpdateChecker)** — queries GitHub Releases API to detect newer versions
+- **UpdateInfo** — struct with `available`, `latestVersion`, `downloadUrl`, `changelogUrl`, `releaseName`, `error`
+- **"Check for Updates"** — new menu entry under Help that checks GitHub for the latest release
+- **Update dialog** — shows version info and opens download link if update available; reports "up to date" or errors gracefully
+- **Silent check API** — `checkSilent()` for background version checking without user notification
+- **Qt6::Network dependency** — new CMake link dependency for HTTP requests
+
+### Changed
+- **CMakeLists.txt** — added `Network` to Qt6 components and target_link_libraries; added UpdateChecker to IO_SOURCES; version bumped to 2.29.0
+
 ## [2.28.0] — 2026-06-27
 
 ### Added
