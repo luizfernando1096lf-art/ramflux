@@ -5,6 +5,18 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.41.0] — 2026-06-28
+
+### Fixed
+- **POWRPROF.dll crash (0xC0000005 at +0x59CE)** — `PowerReadFriendlyName` crashes deterministically on this Windows build; replaced with hardcoded GUID-based friendly name resolution (Balanced, High Performance, Power Saver, Ultimate Performance)
+- **PowerPlanWidget crash** — `getAvailablePowerPlans()` now enumerates power plans via registry (`HKLM\SYSTEM\CurrentControlSet\Control\Power\UserPowerSchemes`) instead of calling `PowerEnumerate`, eliminating all POWRPROF calls from the 5s refresh timer
+- **PowerManager background thread crash** — removed periodic `getActivePowerPlan()` call from `monitorLoop()` (was calling `PowerGetActiveScheme` every ~1s); thread now reads cached active plan name only
+- **`PowerFreeMemory` typedef** — fixed signature from `PVOID` to `PVOID*` (was using wrong calling convention; function is not exported on this system anyway)
+- **Startup markers** — added `fflush(f)` for immediate disk writes to `RAMFlux_startup.log`
+
+### Changed
+- **Constants.h** — version bumped from 2.15.0 to 2.41.0
+
 ## [2.40.0] — 2026-06-27
 
 ### Added
