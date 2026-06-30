@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.41.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.42.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -227,6 +227,23 @@ Expanded event system with 8 new event types; HeuristicEngine and FluxScheduler 
 ### v2.21.0 — Plugin System
 
 Lightweight DLL-based plugin sandbox for user-defined optimization routines. Scans `plugins/` directory at startup; plugins export `createPlugin()`/`destroyPlugin()` and receive a whitelisted `IPluginContext` with safe API access. 5s execution timeout.
+
+### v2.42.0 — Security & Thread Safety Audit
+
+**24 bugs fixed** — 6 CRITICAL, 7 HIGH, 11 MEDIUM across 15 source files:
+- **PowerManager UAF (CRITICAL)** — callback list iteration without mutex
+- **ProfileManager UAF (CRITICAL)** — unsubscribe missing; token-based API added
+- **activeRuleCount data race (CRITICAL)** — size read without lock
+- **MemoryDedup data race (CRITICAL)** — fields accessed without mutex
+- **ConfigIO enum UB (CRITICAL)** — JSON enum without range validation
+- **NetworkQoS data race (HIGH)** — non-atomic field without mutex
+- **cacheIpHlp double-checked locking (HIGH)** — mutex added
+- **Named pipe DACL LPE (HIGH)** — Interactive Users had Generic All; replaced with user SID
+- **Pipe client verification TOCTOU (HIGH)** — path check moved inside impersonation
+- **Handle leak in FluxGameMode (HIGH)** — CloseHandle added on reassignment
+- **Unchecked malloc in RAMFluxHelper (HIGH)** — null check added
+- **11 MEDIUM fixes** — atomics, underflow guards, OOB cap, bounds clamping, non-copyable HandleCloser
+- [Full changelog](CHANGELOG.md)
 
 ### v2.20.0 — I/O Bandwidth Throttling
 
