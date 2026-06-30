@@ -5,7 +5,32 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.41.0] — 2026-06-28
+## [2.42.0] — 2026-06-29
+
+### Fixed
+- **Thread safety audit — 24 bugs fixed** across thread safety, memory safety, TOCTOU, and API design
+- **PowerManager UAF (CRITICAL)** — `monitorLoop()` iterated `m_subs` without mutex while `unsubscribe()` could erase elements; now copies callback list under lock
+- **NetworkQoS data race (HIGH)** — `m_lastUpdate` (non-atomic) read/written without mutex; `lock_guard` moved before access
+- **cacheIpHlp double-checked locking (HIGH)** — `s_iphlpCached` checked without mutex; added `static std::mutex s_iphlpMutex`
+- **Named pipe DACL LPE (HIGH)** — `RAMFluxHelper` pipe granted `Generic All` to `Interactive Users`; replaced with current user SID via `GetTokenInformation`
+- **Pipe client verification TOCTOU (HIGH)** — path check occurred after `RevertToSelf()`; moved inside impersonation window with process handle held open
+- **Handle leak in FluxGameMode (HIGH)** — `m_gameHandle` overwritten without `CloseHandle` on previous value
+- **Unchecked malloc in RAMFluxHelper (HIGH)** — `tokenUser` dereferenced without null check after `malloc`
+- **activeRuleCount data race (CRITICAL)** — read `m_appliedRules.size()` without lock; moved to `.cpp` with `lock_guard`
+- **MemoryDedup data race (CRITICAL)** — `m_lastScan`/`m_lastReport` accessed without mutex; early-return check now under lock
+- **ProfileManager callback UAF (CRITICAL)** — `onProfileChanged()` had no unsubscribe; added token-based subscribe/unsubscribe API
+- **ConfigIO enum UB (CRITICAL)** — `ProfileType`/`RuleType`/`RuleAction` cast from JSON without range validation; added bounds checks
+- **ProcessCache m_detailCounter race** — changed to `std::atomic<int>`
+- **getTcpCounts/getUdpCounts underflow** — `maxEntries` calc now guarded against `size < offsetof`
+- **FluxGameMode pid/name race** — `m_gamePid.load()` moved inside mutex for consistency with `m_currentGameName`
+- **FluxMiningMode pid/name race** — same pattern fixed
+- **main.cpp OOB read** — module enumeration capped at 1024 entries
+- **Registry enum buffer overflow** — `ERROR_MORE_DATA` now handled with dynamic `realloc`
+- **startupDelaySec unvalidated** — clamped to 5-600s range
+- **LeakHunter HandleCloser** — made non-copyable to prevent double-`CloseHandle`
+
+### Changed
+- **Constants.h** — version bumped from 2.41.0 to 2.42.0
 
 ### Fixed
 - **POWRPROF.dll crash (0xC0000005 at +0x59CE)** — `PowerReadFriendlyName` crashes deterministically on this Windows build; replaced with hardcoded GUID-based friendly name resolution (Balanced, High Performance, Power Saver, Ultimate Performance)
