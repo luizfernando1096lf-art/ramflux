@@ -3,7 +3,8 @@
 
 # RAMFlux Development Phases
 
-> **Status v2.15.0**: Phases 1-30 concluídos.
+> **Status v2.42.0**: Phases 1-30 concluídos.
+> - Auditoria completa de segurança e thread safety: 24 bugs corrigidos — 6 CRÍTICOS, 7 ALTOS, 11 MÉDIOS (v2.42.0)
 > - Auto-tuning Engine: feedback loop que ajusta cooldown/intervalo do Scheduler e Cleaner conforme acurácia das predições (v2.7.0)
 > - HardFaultPredictor 2.0: predição por regressão linear com severidade graduada (5 níveis: None/Critical), substituindo threshold fixo binário (v2.7.0)
 > - Effectiveness Tracking: storePrediction/evaluatePredictionAccuracy — acurácia geral + recente, FP/FN tracking (v2.7.0)
