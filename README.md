@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.42.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.43.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -227,6 +227,19 @@ Expanded event system with 8 new event types; HeuristicEngine and FluxScheduler 
 ### v2.21.0 — Plugin System
 
 Lightweight DLL-based plugin sandbox for user-defined optimization routines. Scans `plugins/` directory at startup; plugins export `createPlugin()`/`destroyPlugin()` and receive a whitelisted `IPluginContext` with safe API access. 5s execution timeout.
+
+### v2.43.0 — Segunda Auditoria: Thread Safety & Data Races
+
+**8 bugs fixed** — 1 CRITICAL, 4 HIGH, 3 MEDIUM:
+- **DiagnosticsEngine deadlock (CRITICAL)** — callbacks invoked under lock; copy-and-release pattern applied
+- **HeuristicEngine data race (HIGH)** — `m_lastCleanTime` read/written without synchronization; migrated to atomic epoch
+- **HeuristicEngine dangling this (HIGH)** — EventBus subscriptions unsubscribed on shutdown
+- **FluxClassifier m_config race (HIGH)** — `setConfig()` now locks `m_mutex` before write
+- **FluxNTAPI HardFaultHistory race (HIGH)** — `samples.size()` accessed without mutex
+- **FluxScheduler m_originalIntervalMs (MEDIUM)** — promoted to `std::atomic<int>`
+- **Logger atomics (MEDIUM)** — `m_maxBackupFiles`, `m_compressBackups` made atomic
+- **PluginManager async (MEDIUM)** — capture by value instead of reference
+- [Full changelog](CHANGELOG.md)
 
 ### v2.42.0 — Security & Thread Safety Audit
 

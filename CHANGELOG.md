@@ -5,6 +5,21 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.43.0] — 2026-07-19
+
+### Fixed
+- **DiagnosticsEngine deadlock (CRITICAL)** — `checkLoop()` invoked callbacks while holding `m_mutex`; if a callback called `unsubscribe()`, it would deadlock on the same non-recursive mutex. Callbacks are now copied under lock and invoked outside.
+- **HeuristicEngine m_lastCleanTime data race (HIGH)** — `m_lastCleanTime` written from EventBus dispatch thread without lock while read under `m_mutex`; replaced with `std::atomic<int64_t>` epoch.
+- **HeuristicEngine EventBus dangling this (HIGH)** — `CleaningStarted`/`CleaningFinished` subscriptions captured `this` but were never unsubscribed; added subscription ID storage and `unsubscribe()` in `shutdown()`.
+- **FluxClassifier m_config data race (HIGH)** — `setConfig()` wrote `m_config` without mutex while `classifyImpl()` read it under `m_mutex`; added `lock_guard` in `setConfig()`.
+- **FluxScheduler m_originalIntervalMs data race (MEDIUM)** — plain `int` read/written without synchronization from multiple threads; changed to `std::atomic<int>`.
+- **Logger m_maxBackupFiles/m_compressBackups data race (MEDIUM)** — written without lock, read under `m_mutex`; changed to `std::atomic<int>` and `std::atomic<bool>`.
+- **FluxNTAPI HardFaultHistory sample count race (HIGH)** — `hist.samples.size()` accessed without locking `hist.mtx`; added public `size()` method with internal lock.
+- **PluginManager async plugin reference (MEDIUM)** — lambda captured reference to vector element that could dangle during concurrent modification; captures raw `IPlugin*` by value instead.
+
+### Changed
+- **Constants.h** — version bumped from 2.42.0 to 2.43.0
+
 ## [2.42.0] — 2026-06-29
 
 ### Fixed
