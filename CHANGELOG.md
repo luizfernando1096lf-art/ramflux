@@ -5,6 +5,38 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.0] — 2026-07-27
+
+### Fixed
+- **FluxTelemetry UAF (CRITICAL)** — `m_collectionRequest` was a raw `HANDLE` with no synchronization; replaced with `std::atomic<HANDLE>` and atomic loads before every `SetEvent`/`ResetEvent`
+- **Named pipe full-path auth bypass (CRITICAL)** — `RAMFluxHelper` compared client pipe prefix+suffix instead of full path, allowing impersonation via `\\.\pipe\any_prefixRAMFluxPipe`; now requires exact path match
+- **Named pipe instance hoarding (HIGH)** — `PIPE_UNLIMITED_INSTANCES` allowed unlimited pipe clones; capped to 2
+- **PluginManager cancel-thread execution (CRITICAL)** — `executeAllWithTimeout()` used `wait_for` + flag but thread had no cancellation point; removed, only `executeAll()` remains
+- **PluginManager sandbox bypass (HIGH)** — `setProcessPriority` and `setProcessIoPriority` accepted self-PID and critical system PIDs; added guards for PID ≤ 4 and self-PID
+- **PluginManager DLL hijacking (CRITICAL)** — `LoadLibraryW` with `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR` vulnerable to DLL side-loading in plugin directory; removed flag, added try/catch
+- **getCacheTopology double-checked locking (HIGH)** — broken DCLP pattern without `std::call_once`; replaced with `std::call_once`
+- **Disk queue length rate calculation (HIGH)** — pair of `std::atomic` values updated non-atomically; replaced with `std::mutex`
+- **Hard fault prediction rate calculation (HIGH)** — same atomic-pair race; replaced with `std::mutex`
+- **Predictive hard fault info rate calculation (HIGH)** — same atomic-pair race; replaced with `std::mutex`
+- **FluxNTAPI bool races (HIGH)** — `s_ioCached`, `s_powerCached`, `s_powerWriteCached`, `s_ntdllCached` were plain `bool` accessed from multiple threads; changed to `std::atomic<bool>` with `memory_order_acquire/release`
+- **MainWindow ProfileManager callback (HIGH)** — lambda captured `this` without unsubscribe; stored subscription token, `unsubscribeProfileChanged()` in destructor
+- **Smart Optimize deepClean duplication (HIGH)** — Smart Optimize called `deepClean()` which was identical to Deep Clean; replaced with `quickClean()` for distinct behavior
+- **HeuristicEngine m_effectiveness race (HIGH)** — `recentAccuracy` read without lock in `calculateEffectiveness()`; now read under `m_mutex`
+- **FluxClassifier config() race (HIGH)** — `config()` read `m_config` without lock; added `lock_guard`
+- **PressurePredictor R² calculation (MEDIUM)** — intercept hardcoded to first sample instead of regression intercept; corrected to `yMean - slope * xMean`
+- **FluxClassifier m_history unbounded growth (MEDIUM)** — dead processes never evicted; stale entries (>10min) now cleaned on each `recordSample()`
+- **ConsoleWidget m_allLines unbounded growth (MEDIUM)** — `QStringList` accumulated every log line forever; capped at 10,000 entries
+- **ProcessRulesEngine missing critical processes (MEDIUM)** — `svchost.exe` and `dwm.exe` missing from critical process list; added
+- **ProcessRulesEngine multi-wildcard pattern broken (MEDIUM)** — `find('*')` only matched first wildcard; `*foo*` never matched; replaced with proper backtracking glob matcher supporting `*` and `?`
+- **getCacheTopology infinite loop (MEDIUM)** — `ptr += info->Size` with `Size==0` caused infinite loop; added `if (Size == 0) break` guard in all three loops
+- **trimAllProcesses PID 0 (MEDIUM)** — `trimAllProcesses()` did not skip PID ≤ 4 (System Idle, System); added guard matching `trimIdleProcesses()`
+- **FluxTelemetry first collection silent catch (MEDIUM)** — initial `catch (...) {}` swallowed all exceptions without logging; added exception logging matching main loop pattern
+- **PressurePredictor O(n) front erase (MEDIUM)** — `vector::erase(begin())` was O(n); changed container to `std::deque` for O(1) `pop_front()`
+- **FluxScheduler executeAllWithTimeout (HIGH)** — removed alongside PluginManager cancel-thread fix; only `executeAll()` remains
+
+### Changed
+- **Constants.h** — version bumped from 2.43.0 to 2.44.0
+
 ## [2.43.0] — 2026-07-19
 
 ### Fixed

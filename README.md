@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.43.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.44.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,29 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.41.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.41.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.41.0) |
+| Latest Release | [v2.44.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.0) |
+
+### v2.44.0 — Terceira Auditoria: Security, Thread Safety & Correctness
+
+**28 bugs fixed** — 5 CRITICAL, 12 HIGH, 11 MEDIUM across 12 source files:
+- **FluxTelemetry UAF (CRITICAL)** — raw HANDLE with no sync → `std::atomic<HANDLE>`
+- **Named pipe auth bypass (CRITICAL)** — prefix+suffix comparison → exact full-path match
+- **PluginManager cancel-thread (CRITICAL)** — removed `executeAllWithTimeout()` with no cancellation point
+- **PluginManager DLL hijacking (CRITICAL)** — `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR` removed, try/catch added
+- **Named pipe instance hoarding (HIGH)** — `PIPE_UNLIMITED_INSTANCES` → capped to 2
+- **PluginManager sandbox (HIGH)** — self-PID and PID ≤ 4 now rejected
+- **getCacheTopology DCLP (HIGH)** — broken double-checked locking → `std::call_once`
+- **3× rate calculation races (HIGH)** — atomic pairs → `std::mutex`
+- **4× bool data races (HIGH)** — plain `bool` → `std::atomic<bool>`
+- **MainWindow callback UAF (HIGH)** — token-based unsubscribe in destructor
+- **Smart Optimize duplication (HIGH)** — now uses `quickClean()` for distinct behavior
+- **HeuristicEngine race (HIGH)** — `m_effectiveness` read under lock
+- **11 MEDIUM fixes** — R² calculation, unbounded maps/lists, missing critical processes, broken glob matching, infinite loop guard, PID 0 trim, silent exception swallowing, O(n) deque front-erase
+- [Full changelog](CHANGELOG.md)
 
 ### v2.41.0 - POWRPROF Crash Fix
 
