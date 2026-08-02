@@ -3,7 +3,8 @@
 
 # RAMFlux Development Phases
 
-> **Status v2.44.0**: Phases 1-30 concluídos.
+> **Status v2.44.1**: Phases 1-30 concluídos.
+> - Quarta auditoria: segurança, thread safety e corretude: 21 bugs corrigidos — 2 CRÍTICOS, 5 ALTOS, 10 MÉDIOS, 4 BAIXOS (v2.44.1)
 > - Terceira auditoria: segurança, thread safety e corretude: 28 bugs corrigidos — 5 CRÍTICOS, 12 ALTOS, 11 MÉDIOS (v2.44.0)
 > - Auditoria completa de segurança e thread safety: 24 bugs corrigidos — 6 CRÍTICOS, 7 ALTOS, 11 MÉDIOS (v2.42.0)
 > - Auto-tuning Engine: feedback loop que ajusta cooldown/intervalo do Scheduler e Cleaner conforme acurácia das predições (v2.7.0)

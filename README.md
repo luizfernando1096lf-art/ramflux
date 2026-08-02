@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.44.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.44.1-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,25 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.0**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.1**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.44.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.0) |
+| Latest Release | [v2.44.1](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.1) |
+
+### v2.44.1 — Quarta Auditoria: Security, Thread Safety & Correctness
+
+**21 bugs fixed** — 2 CRITICAL, 5 HIGH, 10 MEDIUM, 4 LOW:
+- **Power API self-deadlock (CRITICAL)** — `cachePowerApi()` re-locked `s_powerMutex` while callers already held it (UB on first power-plan access)
+- **ModuleManager shutdown deadlock (CRITICAL)** — `shutdownAll()` joined worker threads holding `m_mutex` → permanent hang; now shuts down outside the lock
+- **Helper TRIM PID guard (HIGH)** — `TRIM:<pid>` rejects PID ≤ 4 and self-PID
+- **Widget module name mismatch (HIGH)** — `"Scheduler"` → `"FluxScheduler"` (3 widgets were inert)
+- **HibernateWidget fabricated pressure (HIGH)** — `evaluate()` used hardcoded `0.0`; now uses live telemetry snapshot
+- **Saved profile restored (HIGH)** — profile index persisted via QSettings and restored at startup
+- **SettingsDialog gating (HIGH)** — options no longer load only for the Custom profile
+- **10 MEDIUM fixes** — overlapped write UB, uninitialized buffer, HibernateAssist/IoMonitor/EventBus races, LeakHunter threshold never applied, deep-clean failure surfaced, scheduled-clean epoch, forecast current pressure, `QString::arg` placeholder
+- **4 LOW fixes** — privilege disabled on error paths, ConfigIO cast guards
+- [Full changelog](CHANGELOG.md)
 
 ### v2.44.0 — Terceira Auditoria: Security, Thread Safety & Correctness
 

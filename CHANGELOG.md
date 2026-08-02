@@ -5,6 +5,32 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.1] — 2026-08-02
+
+### Fixed
+- **Power API self-deadlock (CRITICAL)** — `cachePowerApi()`/`cachePowerWriteApi()` acquired `s_powerMutex` while all public power-plan functions already held it (non-recursive mutex), causing undefined behavior on first power-plan access at startup; internal lock removed
+- **ModuleManager shutdown deadlock (CRITICAL)** — `shutdownAll()` joined worker threads while holding `m_mutex`; worker threads block on `getModule()` which takes the same mutex → permanent shutdown hang; snapshot modules under lock, shut down outside the lock
+- **Helper TRIM PID guard (HIGH)** — `TRIM:<pid>` accepted any PID, allowing trimming of critical system processes; now rejects PID ≤ 4 and self-PID in both single-target and `TRIMALL`
+- **Widget module name mismatch (HIGH)** — `HibernateWidget`, `ResponsivenessWidget`, `PowerPlanWidget` called `getModule("Scheduler")` but the module is registered as `"FluxScheduler"`; the 3 widgets were inert; corrected
+- **HibernateWidget fabricated pressure (HIGH)** — `evaluate()` was called with hardcoded `0.0`, so hibernate advice was never produced; now uses live pressure score from telemetry snapshot
+- **Saved profile never restored (HIGH)** — startup always defaulted to Balanced; profile index is now persisted via `QSettings` and restored through `ProfileManager::setProfile`
+- **SettingsDialog loadSettings gating (HIGH)** — all option values only loaded when profile was Custom (`profileIdx == 5`); options now load regardless of selected profile
+- **HelperClient overlapped write UB (MEDIUM)** — `WriteFile` on a `FILE_FLAG_OVERLAPPED` pipe was called with `nullptr` OVERLAPPED (invalid per Win32 contract); now uses a proper `OVERLAPPED` with event + timeout
+- **setAutostart uninitialized buffer (MEDIUM)** — `GetModuleFileNameW` return not checked and buffer not zeroed; `wcslen()` could read past garbage; now zero-initialized with return/length validation
+- **HibernateAssist m_lastAdvice race (MEDIUM)** — `m_lastAdvice`/`m_adviceCount` accessed from scheduler and UI threads unsynchronized; protected with `m_adviceMutex`
+- **IoMonitor m_systemStats race (MEDIUM)** — `m_systemStats` written outside the lock but read under it; write moved inside the lock
+- **EventBus queued callback UAF (MEDIUM)** — callbacks copied into the work queue could outlive `unsubscribe()` and invoke a destroyed `this`; subscriptions now carry an active-id set checked at dispatch
+- **LeakHunter threshold never applied (MEDIUM)** — `setThresholdMB()` was never called; the leak alert threshold now applies from Settings both on load and save
+- **Deep Clean failure ignored (MEDIUM)** — `onDeepClean()` always reported success; failure now surfaced in the status bar
+- **Scheduled clean epoch advance (MEDIUM)** — epoch advanced before `canClean()` check, so a skipped clean delayed the next one a full interval; epoch now advances only after a successful clean
+- **Forecast widget current pressure (MEDIUM)** — `updateForecast()` received `predictedPressure30s` twice, so "current" used the prediction; now passes live pressure from telemetry
+- **QString::arg `%.1f` placeholder (LOW)** — `"σ=%.1f"` is not a valid `QString::arg` placeholder; corrected to `%1`
+- **Helper privilege leak on error paths (LOW)** — `memoryListCommand()` returned without `disablePrivilege()` when ntdll resolution failed; now always disables
+- **ConfigIO double→uint64 casts (LOW)** — negative/non-finite doubles cast to `uint64_t` (UB); guarded with `std::max(0.0, ...)`
+
+### Changed
+- **Constants.h** — version bumped from 2.44.0 to 2.44.1
+
 ## [2.44.0] — 2026-07-27
 
 ### Fixed

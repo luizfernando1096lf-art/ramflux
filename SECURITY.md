@@ -41,3 +41,4 @@ RAMFlux does **not** collect or transmit any user data, telemetry, or personally
 - The privileged helper process validates all requests from the main process
 - Safety checks are performed before every optimization operation
 - **v2.5.2**: Full code audit completed — 18 source files reviewed for injection, buffer overflow, race conditions, null pointers, and resource leaks. Zero findings.
+- **v2.44.1**: Audit v4 completed — 21 bugs fixed: 2 CRITICAL, 5 HIGH, 10 MEDIUM, 4 LOW. Includes power-plan API self-deadlock, shutdown deadlock, helper TRIM PID guard, and EventBus use-after-free prevention.
