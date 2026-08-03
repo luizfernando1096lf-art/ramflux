@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.44.1-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.44.2-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,11 +186,21 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.1**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.2**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.44.1](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.1) |
+| Latest Release | [v2.44.2](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.2) |
+
+### v2.44.2 — Scientific Health Index, AI Predictive Optimizer & Rule Automation
+
+**Major additions**:
+- **Scientific Health Index** — continuous weighted health scoring (pressure 35%, commit 20%, hard faults 15%, page-fault trend 10%, page file 10%, kernel pool 5%, compression 5%) replacing fixed cutoffs
+- **Health Score Trend** — new trend chart in the Health tab plotting overall score history
+- **AI Predictive Optimizer** — `applyPredictiveClean()` cleans preventively before predicted pressure spikes (confidence ≥ 0.6), selective/deep clean with 2-minute cooldown, deferred on anomaly/disk-I/O/battery
+- **Suspend/Resume actions** — new Process Rules and Watchdog actions with critical-process/PID guards
+- **Workload-scoped rules** — rules now filter by active workload (Game, Mining, Heavy, Office)
+- [Full changelog](CHANGELOG.md)
 
 ### v2.44.1 — Quarta Auditoria: Security, Thread Safety & Correctness
 

@@ -5,6 +5,19 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.2] — 2026-08-02
+
+### Added
+- **Scientific Health Index** — `evaluateMemoryHealthImpl()` rewritten from fixed cutoff thresholds to continuous weighted scoring: memory pressure 35%, commit 20%, hard faults 15%, page-fault trend 10%, page file 10%, kernel nonpaged pool 5%, compression 5%; each category (Memory, Disk, I/O, Leaks, System) gets its own score and status
+- **Health Score Trend chart** — `HealthDashboardWidget` now plots the overall score history from `healthHistory()` over time
+- **AI Predictive Optimizer** — `FluxScheduler::applyPredictiveClean()` executes cleaning preventively when the Heuristic Engine predicts a pressure spike (confidence ≥ 0.6): selective clean for high pressure, deep clean for critical pressure; checks every 10 s with a 120 s minimum run interval; deferred on anomaly, high disk I/O, or low battery; toggled with automation via `setPredictiveCleanEnabled()`
+- **Suspend/Resume actions** — `RuleAction::Suspend=10` / `RuleAction::Resume=11` added to the Process Rules Engine and Process Watchdog, with guards rejecting critical processes, self, and PID ≤ 4
+- **Workload-scoped rules** — `ProcessRule::workloadCondition` + `matchesWorkload()`; `ProcessRulesEngine::setCurrentWorkload()` filters rules by active workload (Game, Mining, Heavy, Office); `HeuristicEngine` publishes workload changes to the rules engine
+
+### Changed
+- **Constants.h** — version bumped from 2.44.1 to 2.44.2; added `PREDICTIVE_CLEAN_CHECK_INTERVAL_MS`, `PREDICTIVE_CLEAN_MIN_RUN_INTERVAL_MS`, `PREDICTIVE_CLEAN_LOOKAHEAD_HIGH_MS`, `PREDICTIVE_CLEAN_MIN_STANDBY_GB`
+- **MainWindow** — `onToggleAutomation()` now enables/disables the predictive optimizer alongside auto-optimize
+
 ## [2.44.1] — 2026-08-02
 
 ### Fixed

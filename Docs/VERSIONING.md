@@ -6,21 +6,21 @@ All version strings must be updated together on each release.
 
 | File | Field | Example |
 |------|-------|---------|
-   | `src/shared/Constants.h:9` | `APP_VERSION` | `"2.44.1"` |
-   | `CMakeLists.txt:2` | `project(VERSION ...)` | `2.44.1` |
-   | `installer.wxs:4` | `Package Version` | `"2.44.1"` |
-   | `resources/app.rc:4-5` | `FILEVERSION` / `PRODUCTVERSION` | `2,44,1,0` |
-   | `resources/app.rc:18,23` | `FileVersion` / `ProductVersion` | `"2.44.1.0"` |
-   | `resources/helper.rc:4-5` | `FILEVERSION` / `PRODUCTVERSION` | `2,44,1,0` |
-   | `resources/helper.rc:18,23` | `FileVersion` / `ProductVersion` | `"2.44.1.0"` |
-   | `resources/app.manifest:6` | `assemblyIdentity version` | `"2.44.1.0"` |
-   | `resources/helper.manifest:6` | `assemblyIdentity version` | `"2.44.1.0"` |
-   | `resources/manual_pt.txt:4` | Version text | `Versao 2.44.1` |
-   | `resources/manual_en.txt:4` | Version text | `Version 2.44.1` |
+   | `src/shared/Constants.h:9` | `APP_VERSION` | `"2.44.2"` |
+   | `CMakeLists.txt:2` | `project(VERSION ...)` | `2.44.2` |
+   | `installer.wxs:4` | `Package Version` | `"2.44.2"` |
+   | `resources/app.rc:4-5` | `FILEVERSION` / `PRODUCTVERSION` | `2,44,2,0` |
+   | `resources/app.rc:18,23` | `FileVersion` / `ProductVersion` | `"2.44.2.0"` |
+   | `resources/helper.rc:4-5` | `FILEVERSION` / `PRODUCTVERSION` | `2,44,2,0` |
+   | `resources/helper.rc:18,23` | `FileVersion` / `ProductVersion` | `"2.44.2.0"` |
+   | `resources/app.manifest:6` | `assemblyIdentity version` | `"2.44.2.0"` |
+   | `resources/helper.manifest:6` | `assemblyIdentity version` | `"2.44.2.0"` |
+   | `resources/manual_pt.txt:4` | Version text | `Versao 2.44.2` |
+   | `resources/manual_en.txt:4` | Version text | `Version 2.44.2` |
 ...
-- `FILEVERSION`/`PRODUCTVERSION` string uses dots: `"2.44.1.0"`
-- `APP_VERSION` uses dots: `"2.44.1"`
-- Manifest version uses dots: `"2.44.1.0"`
+- `FILEVERSION`/`PRODUCTVERSION` string uses dots: `"2.44.2.0"`
+- `APP_VERSION` uses dots: `"2.44.2"`
+- Manifest version uses dots: `"2.44.2.0"`
 
 ## Critical: MSI Source Directory
 The `installer.wxs` references files from `build/deploy/`. After rebuilding with `cmake --build`, always run:
