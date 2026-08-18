@@ -3,7 +3,8 @@
 
 # RAMFlux Development Phases
 
-> **Status v2.44.2**: Phases 1-30 concluídos.
+> **Status v2.45.0**: Phases 1-38 concluídos.
+> - Quinta auditoria: 30 bugs corrigidos — 2 CRÍTICOS, 8 ALTOS, 12 MÉDIOS, 8 BAIXOS (v2.45.0)
 > - Índice de Saúde científico: scoring contínuo ponderado (pressure 35%, commit 20%, hard faults 15%, tendência de page faults 10%, page file 10%, pool do kernel 5%, compressão 5%) + gráfico de tendência na aba Health (v2.44.2)
 > - Optimizer preditivo por IA: limpeza preventiva quando a previsão de pressão indica pico (confiança >= 0.6), com cooldown de 2 min e adiamento por anomalia/E/S/bateria (v2.44.2)
 > - Automação inteligente de regras: ações Suspend/Resume no Process Rules Engine e no Process Watchdog + escopo de regras por carga de trabalho (Game, Mining, Heavy, Office) (v2.44.2)

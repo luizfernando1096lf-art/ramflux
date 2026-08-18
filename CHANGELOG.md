@@ -5,6 +5,43 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.45.0] — 2026-08-06
+
+### Fixed
+- **Shutdown use-after-free (CRITICAL)** — `FluxCore` shutdown order was: modules → EventBus; EventBus stops before modules can finish draining, leaving queued events referencing destroyed module callbacks → now EventBus stops last
+- **EventBus dispatch thread join (CRITICAL)** — `stop()` did not join `m_dispatchThread`, risking use-after-free when the thread outlived the EventBus
+- **StandbyScanner data race (HIGH)** — `distributeClean()` was called outside `m_mtx` while result snapshot was inside the lock, causing the result to reference data that could be mutated concurrently
+- **ML online stats corruption (HIGH)** — `update()` used `newMean` to compute the new variance term instead of `oldMean`, causing mean to be correct but variance (and thus std dev) to drift permanently
+- **BenchmarkWidget UI freeze (HIGH)** — `QThread::wait()` had no timeout; a stuck helper process would freeze the UI indefinitely; now uses `wait(5000)` + `terminate()` fallback
+- **PluginManager use-after-move (HIGH)** — `savePluginInfo(lp)` was called after `std::move(lp)`, moving a null pointer into the info struct
+- **ProcessRulesEngine stale QSettings array (MEDIUM)** — `setWindowCount()` appended to a QSettings array but never truncated old entries; array grew unbounded with stale entries
+- **FluxClassifier NaN in coefficient of variation (MEDIUM)** — `cv = stddev / mean` had no guard for `mean == 0`, causing NaN to propagate into workload classification weights
+- **MainWindow ProfileManager callback crash (HIGH)** — `QMetaObject::invokeMethod` captured `this` which could be destroyed before the lambda runs on the GUI thread; now uses `QPointer<MainWindow>` guard
+- **MainWindow PowerManager callback crash (HIGH)** — same `this` capture issue as ProfileManager
+- **FluxNTAPI power API cache (HIGH)** — `cachePowerApi()` and `cachePowerWriteApi()` set the cached flag even when the API was not found, preventing retry; now only set on success
+- **FluxNTAPI privilege leak (MEDIUM)** — `setPageFileSize()` enabled `SeIncreaseQuotaPrivilege` without disabling it on success
+- **FluxNTAPI Ultimate Performance GUID (LOW)** — hardcoded GUID was incorrect for some systems; now uses Windows API lookup
+- **FluxNTAPI setTimerResolution resource leak (MEDIUM)** — `hWinmm` was loaded but never freed
+- **PowerManager real change detection (MEDIUM)** — `isAutomaticMode` compared new mode against itself instead of querying the real active power plan
+- **BenchmarkRunner double-counting (MEDIUM)** — static `s_totalBenchmarks` was incremented twice (once in constructor, once as backup in reportSummary)
+- **BenchmarkRunner static counter non-reset (LOW)** — static counter persisted across benchmark runs, inflating the total count across tab switches
+- **ProcessCache cold page detection (HIGH)** — `wsSnapshot` was transferred to new entry *before* `loadDetails()` could read it, so cold page detection always saw zero snapshot
+- **FluxScheduler separate compression counters (MEDIUM)** — `m_consecutiveInefficientSamples` served double duty for both I/O inefficiency and compression harm detection, triggering false compression-mode switches
+- **FluxScheduler battery boost re-entry (LOW)** — `setBatteryBoost(true)` saved `m_normalPollingIntervalMs` even if a previous boost was still active, overwriting the original value
+- **FluxScheduler standby scanner stale (MEDIUM)** — `m_lastStandbyScanMs` only updated inside the if-branch that triggered `standbyCleanNow()`, so the timer reset didn't apply after a threshold bump
+- **FluxScheduler return guards (MEDIUM)** — `applyPageFileTuning()` and `applyProcessMemoryFirewall()` continued operating after `GlobalMemoryStatusEx` failure
+- **FluxCleaner nested events (LOW)** — `quickClean()`, `deepClean()`, `cleanWorkingSet()`, `defrag()`, `prepareForGame()` each emitted their own `CleaningStarted`/`CleaningFinished` in addition to the composite method's pair, causing nested progress dialogs
+- **FluxCleaner defrag double-trim (LOW)** — `defrag()` called `trimProcesses()` and then `prepareForGame()` also called `trimProcesses()` again if `Area::Defrag` was active
+- **FluxCleaner working set lost result (LOW)** — `cleanWorkingSet()` discarded the return value of `trimProcesses()` instead of returning it
+- **FluxCleaner selective clean lost stats (LOW)** — `selectiveClean()` did not update `lastRecoveredBytes` with the result of `trimProcesses()`
+- **FluxNTAPI setPageFileSize max (LOW)** — used `currentMB` (current size) for `TotalSize` instead of `maximumMB` (maximum), preventing Windows from ever expanding the page file
+- **FluxNTAPI setPageFileSize safety (MEDIUM)** — privilege enable/disable not wrapped in try/catch, risking stuck privilege on exception
+
+### Changed
+- **Constants.h** — version bumped from 2.44.2 to 2.45.0
+- **Manuals** — added Forecast, Health, and Plugins sections (were missing from manual)
+- **Docs** — ARCHITECTURE.md, ROADMAP.md, PHASES.md updated with missing modules and corrected descriptions
+
 ## [2.44.2] — 2026-08-02
 
 ### Added

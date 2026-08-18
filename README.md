@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.44.2-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.45.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)
@@ -186,20 +186,27 @@ See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) for full documentation.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). The current version is **2.44.2**.
+This project follows [Semantic Versioning](https://semver.org/). The current version is **2.45.0**.
 
 | Stream | Version |
 |--------|---------|
-| Latest Release | [v2.44.2](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.44.2) |
+| Latest Release | [v2.45.0](https://github.com/luizfernando1096lf-art/ramflux/releases/tag/v2.45.0) |
 
-### v2.44.2 — Scientific Health Index, AI Predictive Optimizer & Rule Automation
+### v2.45.0 — Quinta Auditoria: 30 Correções de Bugs
 
-**Major additions**:
-- **Scientific Health Index** — continuous weighted health scoring (pressure 35%, commit 20%, hard faults 15%, page-fault trend 10%, page file 10%, kernel pool 5%, compression 5%) replacing fixed cutoffs
-- **Health Score Trend** — new trend chart in the Health tab plotting overall score history
-- **AI Predictive Optimizer** — `applyPredictiveClean()` cleans preventively before predicted pressure spikes (confidence ≥ 0.6), selective/deep clean with 2-minute cooldown, deferred on anomaly/disk-I/O/battery
-- **Suspend/Resume actions** — new Process Rules and Watchdog actions with critical-process/PID guards
-- **Workload-scoped rules** — rules now filter by active workload (Game, Mining, Heavy, Office)
+**Major fixes**:
+- **Shutdown use-after-free (CRITICAL)** — EventBus now stops before modules (was the reverse)
+- **StandbyScanner data race (CRITICAL)** — `distributeClean()` moved under mutex
+- **ML stats corruption (HIGH)** — online mean updated correctly (oldMean saved first)
+- **BenchmarkWidget UI freeze (HIGH)** — `wait()` with 5s timeout + `terminate()` fallback
+- **PluginManager use-after-move (HIGH)** — info copied before `std::move(lp)`
+- **ProcessRulesEngine stale array (MEDIUM)** — QSettings array properly truncated
+- **FluxClassifier NaN (MEDIUM)** — protection against NaN in `cv = stddev / mean`
+- **MainWindow crash (HIGH)** — ProfileManager and PowerManager callbacks use `QPointer`
+- **Power API cache + privilege leak (HIGH)** — FluxNTAPI fixed cache-only-on-success, privilege leak, and GUID
+- **BenchmarkRunner double-counting (MEDIUM)** — static counter removed
+- **FluxCleaner nested events (MEDIUM)** — removed nested CleaningStarted/Finished from composite methods
+- **Compression counters split** — inefficient vs harmful counters separated
 - [Full changelog](CHANGELOG.md)
 
 ### v2.44.1 — Quarta Auditoria: Security, Thread Safety & Correctness

@@ -56,6 +56,21 @@ System telemetry and metrics.
 
 **Responsibilities:** RAM metrics, memory pressure, system statistics, snapshots, historical metrics
 
+### `src/optimizer`
+Pressure scoring and optimization decision engine.
+
+**Responsibilities:** calculatePressureScore() with weighted components (pressure, commit, faults, trends, page file, kernel pool, compression, cache), adaptive thresholds, pre-game optimization decisions
+
+### `src/plugins`
+DLL-based plugin system for user-defined optimization routines.
+
+**Responsibilities:** plugin loading (LoadLibraryExW with restricted search), sandboxed execution (IPluginContext whitelist), timeout enforcement (5s per-plugin), PluginManager IModule integration
+
+### `src/power`
+Dynamic power plan management.
+
+**Responsibilities:** power plan detection, automatic switching (High Performance/Power Saver/Balanced) via powrprof.dll, workload-aware transitions (gaming→High Performance, battery idle→Power Saver)
+
 ### `src/process`
 Process observability layer.
 
@@ -127,6 +142,31 @@ Memory cleaning orchestration.
 - safety-first
 - respect Working Set Aging (skip active processes)
 - cooldown enforcement
+- composite methods (quickClean, deepClean, defragment, cleanWorkingSet) do NOT post CleaningStarted/CleaningFinished — sub-functions handle their own events to avoid double-counting
+
+### `src/dedup`
+Cross-process memory deduplication detection.
+
+**Responsibilities:** FNV-1a 64-bit page hashing, zero-page detection, duplicate group identification, savings estimation
+
+**Key Components:** MemoryDedup (scan top-10 processes, 512 pages each, 120s interval)
+
+### `src/diagnostics`
+System diagnostics and health reporting.
+
+**Responsibilities:** system health checks, diagnostic reports, proactive issue detection
+
+### `src/hibernate`
+Hibernation and fast startup management.
+
+**Responsibilities:** hibernation state detection, fast startup control, power state transitions
+
+### `src/io`
+Configuration I/O and update management.
+
+**Responsibilities:** config import/export (QSettings), version update checking
+
+**Key Components:** ConfigIO (import/export rules/profiles), UpdateChecker (GitHub release polling)
 
 ### `src/leakhunter`
 Memory leak detection platform.
@@ -160,12 +200,17 @@ Process analysis engine.
 ### `src/scheduler`
 Optimization scheduling.
 
-**Responsibilities:** timed optimization triggers, cooldown management, preemptive AI-driven cleaning
+**Responsibilities:** timed optimization triggers, cooldown management, preemptive AI-driven cleaning, ProBalance, battery boost, CpuLimiter, ProcessSuspender, NetworkQoS, ResponsivenessSlider, IoBandwidthThrottler
 
 ### `src/profiles`
 Profile management system.
 
 **Responsibilities:** profiles (Economy/Balanced/Performance/Gaming/Custom), settings persistence, user preferences, profile switching, per-profile configuration
+
+### `src/qos`
+Per-process memory Quality of Service (SLA enforcement).
+
+**Responsibilities:** memory SLA rules (min/max working set, commit caps, page/IO priority, efficiency mode), automatic enforcement via Job Objects and NTAPI priority APIs, violation tracking, wildcard pattern matching
 
 ### `src/rules`
 Process rules engine and watchdog.
