@@ -5,6 +5,28 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.46.0] — 2026-08-20
+
+### Fixed
+- **deepClean multi-area cooldown (CRITICAL)** — `deepClean()` called individual clean methods (cleanStandbyList, cleanModifiedPageList, etc.) which each checked `canClean()` and updated the cooldown epoch, causing only the first area to actually clean; added `force` parameter to bypass per-sub-call cooldown
+- **quickClean trim after standby (CRITICAL)** — `quickClean()` had the same cooldown issue; `trimProcesses()` never ran after `cleanStandbyList()` because the epoch was already updated
+- **MLEngine learning rate data race (HIGH)** — `m_learningRate` was a plain `double` accessed from both the AI thread (read) and the settings thread (write); changed to `std::atomic<double>`
+- **PagePrefetcher counter data race (HIGH)** — `m_totalPrefetches` and `m_totalPagesPrefetched` were plain `int`/`uint64_t` accessed without synchronization; changed to `std::atomic`
+- **CpuLimiter negative CPU load (HIGH)** — `deltaIdle > deltaTotal` could produce a negative CPU load due to timing imprecision; added clamp guard
+- **IoCostTracker::setAlpha() no validation (MEDIUM)** — accepted any double value including 0.0 or negative; now clamped to [0.01, 1.0]
+- **FluxOptimizer pressure score truncation (MEDIUM)** — `static_cast<uint64_t>(score)` truncated fractional part; now uses `std::round()` before casting
+- **ProcessSuspender thrash (MEDIUM)** — processes were immediately resumed when pressure dropped, causing suspend/resume thrash; now enforces minimum 60s suspend duration before resuming
+- **IoBandwidthThrottler dead condition (MEDIUM)** — redundant `if(m_wasUnderPressure)` check inside a block that already returned when `!m_wasUnderPressure`; removed redundant branch
+- **HeuristicEngine PressureDropped false fire (MEDIUM)** — `PressureDropped` fired when level was ≤ Normal, including Idle→Normal transitions where pressure actually rose; now only fires on actual level decrease
+- **FluxScheduler dynamic_cast every loop iteration (LOW)** — `dynamic_cast` for telemetry/optimizer/cleaner performed every scheduler tick; now cached and refreshed every 6 ticks
+- **FluxScheduler time_points uninitialized (LOW)** — 14 `std::chrono::steady_clock::time_point` members were default-constructed to epoch, causing all features to fire simultaneously on first tick; now initialized to `steady_clock::now()`
+- **MLEngine::normalize() variable shadows namespace (LOW)** — local variable `std` shadowed `std::` namespace; renamed to `stddev`
+- **PressurePredictor DBL_MIN zero-guard (LOW)** — used `DBL_MIN` (~2.2e-308) as zero-guard which essentially never triggers; changed to `1e-10`
+
+### Changed
+- **Version** — bumped from 2.45.0 to 2.46.0
+- **installer.wxs** — removed D3Dcompiler_47.dll and opengl32sw.dll references (not available in MSYS2 UCRT64)
+
 ## [2.45.0] — 2026-08-06
 
 ### Fixed
