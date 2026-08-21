@@ -5,6 +5,14 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.47.0] — 2026-08-20
+
+### Fixed
+- **System Info tab visual inconsistency (MEDIUM)** — QScrollArea had no theme styling, showing default system background; added transparent background to theme stylesheet; removed hardcoded Catppuccin Mocha colors from QGroupBox and QLabel in setupInfoTab; removed hardcoded `#585b70` from ResponsivenessWidget, PowerPlanWidget, and StandbyWidget labels
+
+### Changed
+- **Version** — bumped from 2.46.0 to 2.47.0
+
 ## [2.46.0] — 2026-08-20
 
 ### Fixed
