@@ -5,6 +5,30 @@ All notable changes to RAMFlux are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.48.0] — 2026-08-22
+
+### Fixed
+- **setTimerResolution use-after-free (CRITICAL)** — `FreeLibrary(winmm.dll)` was called before invoking the function pointer obtained from it, causing use-after-free; library is now kept loaded during the call, or the function pointer is obtained from the already-loaded winmm.dll
+- **PluginManager unsigned DLL loading (CRITICAL)** — plugins loaded from CWD-relative `plugins/` directory with `LOAD_LIBRARY_SEARCH_APPLICATION_DIR` allowed DLL search order hijacking; now uses `LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_APPLICATION_DIR`, validates canonical path exists and is a `.dll`, rejects paths with `..` traversal
+- **HeuristicEngine mutex held during multi-second I/O (HIGH)** — `feedSnapshot()` held `m_mutex` while calling `evaluateAndPost()` which performs heavy I/O (standby scan, prefetch, QoS enforce, dedup); lock is now released before `evaluateAndPost()` and only reacquired for the final report write
+- **FluxScheduler/EventBus shutdown race (HIGH)** — scheduler thread and other modules could post events after EventBus stopped; EventBus `stop()` now drains remaining queued events after joining the dispatch thread
+- **Helper scheduled task not elevated (HIGH)** — scheduled task created without `/rl HIGHEST`, so helper ran at normal privilege and elevated operations failed silently; added `/rl HIGHEST` flag
+- **Helper pipe squatting (HIGH)** — named pipe created without `FILE_FLAG_FIRST_PIPE_INSTANCE`, allowing a malicious process to intercept client connections; first instance now uses the flag
+- **Memory Firewall killOnViolation not enforced (HIGH)** — `setProcessMemoryLimit()` stored the `killOnViolation` flag but never enforced it; >50% RAM quarantine path now passes `true`, and PID is re-validated before enforcement (TOCTOU protection)
+- **MemoryQoS enforce() data race (HIGH)** — `m_lastEnforce` and `m_lastEnforcement` were read/written without the mutex before the lock was acquired; interval check and timestamp update now happen under `m_mtx`
+- **HeuristicEngine least-squares zero-guard (HIGH)** — `computeSlope()` used `DBL_MIN` (~2.2e-308) as denominator threshold, effectively never triggering, allowing near-infinite slopes; changed to `std::abs(denom) > 1e-10`
+- **CpuLimiter m_resetCpuStats data race (MEDIUM)** — `m_resetCpuStats` was a plain `bool` accessed from `update()` (no lock) and `reset()` (under lock); changed to `std::atomic<bool>`
+- **setPageFileSize path traversal (MEDIUM)** — path validation did not reject `..` sequences or paths without a drive letter; added traversal and drive-letter checks
+- **PluginManager loadPlugin unhandled exceptions (MEDIUM)** — third-party plugin `createFn()` and `initialize()` could throw; now wrapped in try/catch with proper cleanup
+- **ProcessIoPriority wrong class constant (MEDIUM)** — `ProcessIoPriority` used 0x11 (ProcessBasicInformation) instead of the correct 0x21; set/get IoPriority calls were silently failing
+- **FluxTelemetry polling interval floor (LOW)** — setter enforced 100ms floor while `collectionLoop` clamped to 1000ms minimum, silently overriding user values; aligned to 1000ms
+- **HeuristicEngine event subscription order (LOW)** — EventBus subscriptions were registered after the analysis thread started, missing events that fired in the gap; subscriptions now precede thread launch
+- **HeuristicEngine dead code (LOW)** — `tuneFromMetrics()` had a redundant reassignment of `useAcc`; folded condition
+- **PagePrefetcher unused doPrefetch declaration (LOW)** — declared but never defined or called; removed
+
+### Changed
+- **Version** — bumped from 2.47.0 to 2.48.0
+
 ## [2.47.0] — 2026-08-20
 
 ### Fixed
