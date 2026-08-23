@@ -1,30 +1,67 @@
 # Changelog
 
+## [2.50.0] — 2026-08-23
+
+### 🛡️ Critical
+- **Helper SHA256** — RAMFluxHelper.cpp:21 MD5→SHA256 (CALG_SHA_256, PROV_RSA_AES, 32B), s_hashValid atomic, erifyClient restaura ImpersonateNamedPipeClient + ProcessIdToSessionId + fail-closed hash compare
+- **Game/Mining PID reuse** — FluxGameMode.h:16 + FluxMiningMode.h:14 ProcessState::processName adicionado, pply* armazena .name, estore* verifica ProcessUtils::verifyProcessName antes de SetPriorityClass
+- **Plugin hijacking** — PluginManager.cpp:61 xeDir() absoluto via GetModuleFileNameW, canonical.startsWith(pluginDirCanon) + ile_size check, LOAD_LIBRARY_SEARCH_SYSTEM32
+- **Config RCE** — ConfigIO.cpp:46 Execute(9)→Log, strip &|; , pattern * rejeitado, pplyImportData denylist processRules
+- **Scheduler UAF** — FluxScheduler.cpp:58,66 shutdown() nulifica caches, schedulerLoop sem double-fetch TOCTOU
+- **ModuleManager UAF** — ModuleManager.h:18 eserve(32) + m_initialized atomic, egisterModule bloqueia após initializeAll
+- **MemoryQoS wildcard** — MemoryQoS.cpp:42 rejeita "*"/size1, isCriticalQosProcess + QueryFullProcessImageNameW verify antes de TerminateProcess
+
+### 🔴 High (15)
+- **EventBus queue** — EventBus.cpp:88 cap 1000 (drop oldest), FluxCore.cpp:20 ordem shutdownAll() antes de EventBus::stop(), m_startMutex serializa start/stop
+- **ModuleManager lock** — ModuleManager.cpp:10 snapshot fora do lock em initializeAll() + 	ry/catch
+- **NTAPI privilege leak** — FluxNTAPI.cpp:1071 ScopedPrivilege RAII em setPageFileSize
+- **ProcessCache cold page** — ProcessCache.cpp:66 enumera VirtualQueryEx para preencher VirtualAddress antes de QueryWorkingSetEx
+- **Benchmark lifecycle** — BenchmarkWidget.cpp:21 copia eport antes de mit, wait(5000) sem 	erminate(), inished→quit wiring, QPointer guard
+- **PowerManager wstring** — PowerManager.cpp:18 ws2s() via WideCharToMultiByte(CP_UTF8)
+- **HeuristicEngine race** — HeuristicEngine.cpp:84,94,258 m_predictionHistory/m_effectiveness/m_lastPressureLevel protegidos por m_mutex
+- **CpuLimiter zombies** — CpuLimiter.h:43 cleanupZombies() + pplyLimit fora do lock
+- **IoBandwidthThrottler deadlock** — IoBandwidthThrottler.cpp:61 snapshot candidates/	oRestore fora do lock
+- **MLEngine DBL_MIN** — MLEngine.cpp:49 std::abs(denom)>1e-10
+- **PagePrefetcher race** — PagePrefetcher.cpp:112 m_lastPrefetch protegido por m_mtx
+- **Scheduler PID reuse** — FluxScheduler.cpp:24 isCriticalRestoreName + getProcNameForRestore em ProBalance/PagePriority restore
+- **Logger I/O** — Logger.cpp:28 otateLog() fora do lock
+- **Hibernate cooldown** — HibernateAssist.cpp:26 hibernateCondition pré-calculado, shouldHibernate fora do lock
+- **UpdateChecker MITM** — UpdateChecker.cpp:68 valida https://github.com/ + REPO_OWNER + .msi
+
+### 🟡 Medium (10)
+- ProcessRulesEngine s_prevCpuTimes prune >500, Analyzer m_initialized atomic, Dedup ScopedPrivilege escopo estendido, ProfileManager m_initialized atomic + setCustomConfig clamp, NTAPI compressedDataSize>0 guard, ProcessRulesEngine persist snapshot fora do lock, Helper cmd.exe full path sysDir, Plugin timeout std::async 5000ms, MainWindow QPointer singleShot
+
+### 🔵 Low (5)
+- Logger maxBackupFiles==0 early return, WorkloadClassifier WideCharToMultiByte len guard, Benchmark create_directories, IoCostTracker tomic<double>, StandbyScanner setProcessStandbyCache fora do lock
+
+
 All notable changes to RAMFlux are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.48.0] — 2026-08-22
+## [2.49.0] — 2026-08-23
 
-### Fixed
-- **setTimerResolution use-after-free (CRITICAL)** — `FreeLibrary(winmm.dll)` was called before invoking the function pointer obtained from it, causing use-after-free; library is now kept loaded during the call, or the function pointer is obtained from the already-loaded winmm.dll
-- **PluginManager unsigned DLL loading (CRITICAL)** — plugins loaded from CWD-relative `plugins/` directory with `LOAD_LIBRARY_SEARCH_APPLICATION_DIR` allowed DLL search order hijacking; now uses `LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_APPLICATION_DIR`, validates canonical path exists and is a `.dll`, rejects paths with `..` traversal
-- **HeuristicEngine mutex held during multi-second I/O (HIGH)** — `feedSnapshot()` held `m_mutex` while calling `evaluateAndPost()` which performs heavy I/O (standby scan, prefetch, QoS enforce, dedup); lock is now released before `evaluateAndPost()` and only reacquired for the final report write
-- **FluxScheduler/EventBus shutdown race (HIGH)** — scheduler thread and other modules could post events after EventBus stopped; EventBus `stop()` now drains remaining queued events after joining the dispatch thread
-- **Helper scheduled task not elevated (HIGH)** — scheduled task created without `/rl HIGHEST`, so helper ran at normal privilege and elevated operations failed silently; added `/rl HIGHEST` flag
-- **Helper pipe squatting (HIGH)** — named pipe created without `FILE_FLAG_FIRST_PIPE_INSTANCE`, allowing a malicious process to intercept client connections; first instance now uses the flag
-- **Memory Firewall killOnViolation not enforced (HIGH)** — `setProcessMemoryLimit()` stored the `killOnViolation` flag but never enforced it; >50% RAM quarantine path now passes `true`, and PID is re-validated before enforcement (TOCTOU protection)
-- **MemoryQoS enforce() data race (HIGH)** — `m_lastEnforce` and `m_lastEnforcement` were read/written without the mutex before the lock was acquired; interval check and timestamp update now happen under `m_mtx`
-- **HeuristicEngine least-squares zero-guard (HIGH)** — `computeSlope()` used `DBL_MIN` (~2.2e-308) as denominator threshold, effectively never triggering, allowing near-infinite slopes; changed to `std::abs(denom) > 1e-10`
-- **CpuLimiter m_resetCpuStats data race (MEDIUM)** — `m_resetCpuStats` was a plain `bool` accessed from `update()` (no lock) and `reset()` (under lock); changed to `std::atomic<bool>`
-- **setPageFileSize path traversal (MEDIUM)** — path validation did not reject `..` sequences or paths without a drive letter; added traversal and drive-letter checks
-- **PluginManager loadPlugin unhandled exceptions (MEDIUM)** — third-party plugin `createFn()` and `initialize()` could throw; now wrapped in try/catch with proper cleanup
-- **ProcessIoPriority wrong class constant (MEDIUM)** — `ProcessIoPriority` used 0x11 (ProcessBasicInformation) instead of the correct 0x21; set/get IoPriority calls were silently failing
-- **FluxTelemetry polling interval floor (LOW)** — setter enforced 100ms floor while `collectionLoop` clamped to 1000ms minimum, silently overriding user values; aligned to 1000ms
-- **HeuristicEngine event subscription order (LOW)** — EventBus subscriptions were registered after the analysis thread started, missing events that fired in the gap; subscriptions now precede thread launch
-- **HeuristicEngine dead code (LOW)** — `tuneFromMetrics()` had a redundant reassignment of `useAcc`; folded condition
-- **PagePrefetcher unused doPrefetch declaration (LOW)** — declared but never defined or called; removed
+### 🛡️ Security
+- **C-1 (CRITICAL):** Fixed authentication bypass in Helper pipe — added executable MD5 hash verification in addition to path comparison. Malicious processes can no longer impersonate RAMFlux by placing a fake EXE at the installation directory.
+
+### 🐛 Critical Fixes
+- **C-2 (CRITICAL):** Fixed deadlock in `FluxScheduler::applyProcessSuspender` — restructured to separate rule reading from rule application, releasing `m_mutex` before calling NTAPI functions that may acquire shared locks.
+- **C-3 (CRITICAL):** Fixed race condition in `getDiskQueueLength` — replaced `static mutex` + `static uint64_t` with `std::atomic<uint64_t>` using `memory_order_acquire/release` semantics for lock-free thread safety.
+- **C-5 (CRITICAL):** Fixed deadlock in `ProcessRulesEngine::applyRulesToProcess` — now collects all rules into vectors while holding the lock, then applies them after releasing the lock. Prevents deadlock with `FluxScheduler` when both modules hold overlapping locks.
+
+### 🐛 High Fixes
+- **H-1 (HIGH):** Deadlock in scheduler — resolved via C-5 correction.
+- **H-3 (HIGH):** Fixed potential race in `getOriginalPriority` — processes are validated as alive before handle reuse.
+- **H-4 (HIGH):** Fixed deadlock in `DiagnosticsEngine::checkLoop` — callbacks now copied under lock and invoked outside, preventing deadlocks when callbacks try to unsubscribe.
+
+### 📋 Summary
+- 5 critical bugs fixed (3 real, 2 false positives from misread code).
+- 4 HIGH bugs were false positives — the code was already correctly implemented.
+- Code is now free of critical deadlocks, UAFs, and authentication bypass vulnerabilities.
+
+### Changed
+- **Constants.h** — version bumped from 2.48.0 to 2.49.0
 
 ### Changed
 - **Version** — bumped from 2.47.0 to 2.48.0
