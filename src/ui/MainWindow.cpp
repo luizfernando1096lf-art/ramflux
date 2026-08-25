@@ -3,6 +3,7 @@
 #include "MainWindow.h"
 #include <QPointer>
 #include <QTimer>
+#include <QDateTime>
 #include "core/FluxCore.h"
 #include "core/EventBus.h"
 #include "core/Logger.h"
@@ -204,6 +205,8 @@ MainWindow::~MainWindow() {
     if(m_workloadChangedSubId) Core::EventBus::instance().unsubscribe(Constants::EventType::WorkloadChanged, m_workloadChangedSubId);
     if(m_anomalyDetectedSubId) Core::EventBus::instance().unsubscribe(Constants::EventType::AnomalyDetected, m_anomalyDetectedSubId);
     if(m_pressurePredictedSubId) Core::EventBus::instance().unsubscribe(Constants::EventType::PressurePredicted, m_pressurePredictedSubId);
+    if(m_gameDetectedSubId) Core::EventBus::instance().unsubscribe(Constants::EventType::GameDetected, m_gameDetectedSubId);
+    if(m_miningDetectedSubId) Core::EventBus::instance().unsubscribe(Constants::EventType::MiningDetected, m_miningDetectedSubId);
     if(m_powerStateSubId) {
         auto* pm = dynamic_cast<Power::PowerManager*>(
             Core::FluxCore::instance().moduleManager().getModule("PowerManager"));
@@ -395,6 +398,16 @@ void MainWindow::setupConnections() {
             if(!wp) return;
             QMetaObject::invokeMethod(wp, [wp]() { if(wp) wp->onCleanStatsUpdate(); }, Qt::QueuedConnection);
         });
+    m_gameDetectedSubId = Core::EventBus::instance().subscribe(Constants::EventType::GameDetected,
+        [wp = QPointer<MainWindow>(this)]() {
+            if(!wp) return;
+            QMetaObject::invokeMethod(wp, [wp]() { if(wp && wp->m_historyChart) wp->m_historyChart->addEventMarker("GAME", QDateTime::currentDateTime()); }, Qt::QueuedConnection);
+        });
+    m_miningDetectedSubId = Core::EventBus::instance().subscribe(Constants::EventType::MiningDetected,
+        [wp = QPointer<MainWindow>(this)]() {
+            if(!wp) return;
+            QMetaObject::invokeMethod(wp, [wp]() { if(wp && wp->m_historyChart) wp->m_historyChart->addEventMarker("MINER", QDateTime::currentDateTime()); }, Qt::QueuedConnection);
+        });
     connect(m_trayManager, &SystemTrayManager::showDashboardRequested, this, [this]() {
         showNormal(); activateWindow(); raise();
     });
@@ -453,6 +466,10 @@ void MainWindow::setupDashboardTab(QWidget* tab) {
     layout->addWidget(m_fileCacheLabel);
     m_historyChart = new HistoryChart();
     layout->addWidget(m_historyChart, 1);
+    m_explainLabel = new QLabel("—", this);
+    m_explainLabel->setStyleSheet("color: #a6adc8; font-size: 11px; font-style: italic; padding: 2px 6px; background: #181825; border-radius: 4px;");
+    m_explainLabel->setWordWrap(true);
+    layout->addWidget(m_explainLabel);
     auto* actionBar = new QHBoxLayout();
     actionBar->setSpacing(8);
     auto* optimizeBtn = new QPushButton("Smart Optimize");
@@ -802,8 +819,22 @@ void MainWindow::onMemoryUpdated() {
     m_processCard->setValue(QString::number(snap.processCount));
     auto cacheGB = static_cast<double>(snap.cachedMemory) / (1024.0 * 1024 * 1024);
     m_fileCacheLabel->setText(QString("File Cache: %1 GB").arg(cacheGB, 0, 'f', 2));
-    //m_historyChart->addDataPoint(usedGB, freeGB, loadPct,
-    //    static_cast<double>(pressure), commitGB, standbyGB);
+    if(m_historyChart) m_historyChart->addDataPoint(usedGB, freeGB, loadPct,
+        static_cast<double>(pressure), commitGB, standbyGB);
+    if(m_explainLabel) {
+        QString explain;
+        if(pressure > 85) {
+            QString topName = snap.topProcesses.empty() ? QStringLiteral("desconhecido") : QString::fromStdWString(snap.topProcesses[0].name);
+            explain = QStringLiteral("Pressão %1% CRÍTICA → %2 faults/s + Standby %3GB + %4").arg(pressure).arg(snap.hardFaultsPerSec).arg(standbyGB,0,'f',1).arg(topName);
+        } else if(pressure > 70) {
+            explain = QStringLiteral("Pressão %1% alta → Standby %2GB + faults %3/s").arg(pressure).arg(standbyGB,0,'f',1).arg(snap.hardFaultsPerSec);
+        } else if(pressure > 50) {
+            explain = QStringLiteral("Pressão %1% moderada → Uso %2%").arg(pressure).arg(loadPct,0,'f',0);
+        } else {
+            explain = QStringLiteral("Pressão %1% normal — sistema saudável").arg(pressure);
+        }
+        m_explainLabel->setText(explain);
+    }
     Q_UNUSED(totalGB);
     //if(m_sysInfoLabel) {        QString infoText = QString(            "Total RAM: %1 GB\n"            "Kernel Memory: %2 GB (Paged: %3 GB | Nonpaged: %4 GB)\n"            "Virtual Memory: %5 / %6 GB\n"            "Page File: %7 / %8 GB\n"            "Compression Savings: %9 GB (%10%%)")            .arg(snap.totalRamGB(), 0, 'f', 2)            .arg(snap.kernelMemory / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.kernelPaged / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.kernelNonpaged / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.usedVirtual / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.totalVirtual / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.usedPageFile / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.totalPageFile / (1024.0 * 1024 * 1024), 0, 'f', 2)            .arg(snap.compressionSavingsGB(), 0, 'f', 2)            .arg(snap.compressionSavingsPercent(), 0, 'f', 1);        m_sysInfoLabel->setText(infoText);    }
     //m_processList->refreshProcessList();
