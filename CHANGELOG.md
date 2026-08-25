@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.51.0] - 2026-08-24
+
+### Critical / High (Sixth Audit)
+- **NTAPI memory accounting** - corrected `getStandbyMemorySize` (PageCountByPriority sum),
+  `getTotalModifiedMemory`, `getPhysicalMemoryBreakdown`, compression name and
+  `getCompressionStoreInfo`/`getCompressionEfficiency` metrics
+- **NTAPI critical-process guards** - `isCriticalSystemProcess` applied to suspend/limit/quarantine/trim
+- **NTAPI privileges** - `ScopedPrivilege` now saves/restores previous state
+- **UpdateChecker** - strict `isValidReleaseUrl` (host + path allowlist), silent-flag bug fixed
+- **Helper IPC** - `verifyServerPipe` mutual auth (server PID + image name), mutex DACL,
+  `FILE_FLAG_FIRST_PIPE_INSTANCE`, protected-path LPE guard
+- **Plugins** - absolute-path traversal fix, `LoadLibraryExW` safe flags, non-blocking timeout, mutex
+- **Benchmark** - `m_cancelled` atomic, reset on run, report path-traversal sanitization
+- **main** - `--benchmark` `std::stoi` crash fixed, crash dump written to `%TEMP%`
+- **PID-reuse/TOCTOU** - `verifyProcessById` added; applied to Memory Firewall, ProcessSuspender, ProcessListWidget
+- **Self/critical exclusion** - MemoryDedup & LeakHunter skip critical processes, plus self
+
+### Medium
+- **GameMode/Mining** - now restore the target process own CPU/IO/page priority and affinity on exit
+- **MemoryQoS** - revert page/IO/efficiency state when a process no longer matches any active rule
+- **Diagnostics** - `setEnabled` now actually gates the evaluation loop
+- **Optimizer** - cached-memory pressure contribution sign corrected
+- **Scheduler** - `m_memoryHistory` map bounded (purge of dead PIDs)
+- **Analyzer** - `m_cpuSamples` map bounded (purge of dead PIDs)
+- **SettingsDialog** - "Reset Cleaner Statistics" now requires confirmation
+
 ## [2.50.0] — 2026-08-23
 
 ### 🛡️ Critical

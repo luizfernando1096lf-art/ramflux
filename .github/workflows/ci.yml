@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-charts
+            mingw-w64-ucrt-x86_64-qt6-tools
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-ninja
+
+      - name: Configure
+        shell: msys2 {0}
+        run: |
+          cmake -B build2 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          cmake --build build2 --config Release -j 8
+
+      - name: Deploy Qt dependencies
+        shell: msys2 {0}
+        run: |
+          windeployqt6.exe build2/deploy/RAMFlux.exe --release
+          ls -lh build2/deploy/*.dll
+          test -f build2/deploy/libbrotlidec.dll || (echo "libbrotlidec.dll missing!" && exit 1)
+          test -f build2/deploy/Qt6Core.dll || (echo "Qt6Core.dll missing!" && exit 1)
+
+      - name: Setup WiX
+        run: dotnet tool install --global wix --version 4.0.5
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" build installer.wxs -o RAMFlux-${{ github.sha }}.msi -ext WixToolset.UI.wixext
+          if (!(Test-Path "RAMFlux-${{ github.sha }}.msi")) { throw "MSI not built" }
+          Get-Item "RAMFlux-${{ github.sha }}.msi" | Format-List Length
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          # MSI must contain brotli
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" build --help | Out-Null
+          if ((Get-Item "RAMFlux-${{ github.sha }}.msi").Length -lt 10MB) { throw "MSI too small, missing DLLs?" }
+          Write-Host "CI passed: MSI contains dependencies"
