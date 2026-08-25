@@ -833,6 +833,16 @@ void MainWindow::onMemoryUpdated() {
         } else {
             explain = QStringLiteral("Pressão %1% normal — sistema saudável").arg(pressure);
         }
+        // Append 60s prediction if confident
+        if(auto* heuristic = dynamic_cast<AI::HeuristicEngine*>(Core::FluxCore::instance().moduleManager().getModule("HeuristicEngine"))) {
+            auto rep = heuristic->currentReport();
+            if(rep.predictionConfidence >= 0.5 && rep.predictedPressure60s >= 70.0) {
+                explain += QStringLiteral(" | Previsto %1% em 60s (conf %2%)")
+                    .arg(static_cast<int>(rep.predictedPressure60s))
+                    .arg(static_cast<int>(rep.predictionConfidence*100));
+                if(rep.predictedPressure60s >= 85.0) explain += QStringLiteral(" ⚠️");
+            }
+        }
         m_explainLabel->setText(explain);
     }
     Q_UNUSED(totalGB);
