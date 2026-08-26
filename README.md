@@ -2,7 +2,7 @@
 
 **Intelligent Memory Orchestrator for Windows**
 
-[![Version](https://img.shields.io/badge/version-2.51.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
+[![Version](https://img.shields.io/badge/version-2.52.0-blue.svg)](https://github.com/luizfernando1096lf-art/ramflux/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4.svg)](https://github.com/luizfernando1096lf-art/ramflux)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-00599C.svg)](https://en.cppreference.com/w/cpp/20)
 [![Qt](https://img.shields.io/badge/Qt-6.11-41CD52.svg)](https://www.qt.io)

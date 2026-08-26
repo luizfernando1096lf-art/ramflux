@@ -1,0 +1,821 @@
+==============================
+        RAMFlux - Manual do Usuário
+==============================
+Versão 2.52.0
+
+ÍNDICE
+1. Introdução
+2. Instalação
+3. Interface Principal
+4. Aba Dashboard
+5. Aba Processes
+6. Aba Leak Hunter
+7. Aba Memory Map
+8. Aba System Info
+9. Aba I/O
+10. Aba Console
+11. Aba Heatmap
+12. Aba Forecast (Previsão)
+13. Aba Health (Saúde)
+14. Aba Plugins
+15. Configurações
+16. Modo Jogo e Modo Mineração
+17. ProBalance
+18. Process Rules (Regras de Processo)
+19. CPU Affinity Manager
+20. Process Watchdog
+21. Power Plan Automation (Plano de Energia)
+22. Network QoS (Prioridade de Rede)
+23. Responsiveness Slider (Controle de Responsividade)
+24. Solução de Problemas
+
+==============================
+1. INTRODUÇÃO
+==============================
+
+RAMFlux é uma ferramenta de monitoramento e otimização de memória
+para Windows. Ele fornece informações em tempo real sobre o uso de
+memória do sistema, permite limpeza de memória cache e gerencia
+processos com alto consumo de RAM.
+
+
+==============================
+2. INSTALAÇÃO
+==============================
+
+⚠️ O instalador DEVE ser executado como Administrador.
+
+Execute o instalador MSI como Administrador e siga as instruções
+na tela. O RAMFlux será instalado em Arquivos de Programas e um
+atalho será criado no Menu Iniciar.
+
+O instalador inclui o RAMFluxHelper.exe, um processo auxiliar
+privilegiado que executa operações de limpeza com privilégios
+máximos. Na primeira execução, o helper registra automaticamente
+uma Scheduled Task (início de sessão, nível máximo) para que
+próximos logons não exijam prompt UAC.
+
+Requisitos:
+- Windows 10 ou 11 (64 bits)
+- 4 GB de RAM (mínimo)
+- 200 MB de espaço em disco
+
+
+==============================
+3. INTERFACE PRINCIPAL
+==============================
+
+O RAMFlux organiza-se em abas, acessíveis na parte superior da janela:
+
+- Dashboard: visão geral do sistema
+- Processes: lista de processos com consumo de memória
+- Leak Hunter: detecção de vazamentos de memória
+- Memory Map: distribuição de páginas de memória física
+- System Info: informações detalhadas do sistema
+- I/O: taxas de leitura/gravação por processo e do sistema
+- Console: log de eventos e diagnósticos
+- Heatmap: mapa visual de memória por processo (v2.14.0)
+- Forecast: previsão de pressão e métricas de IA (v2.23.0)
+- Health: índice de saúde do sistema (v2.25.0)
+- Plugins: gerenciamento de plugins DLL (v2.21.0)
+
+Na barra inferior (status bar) você encontra:
+- Status atual do otimizador
+- Estatísticas de limpeza
+- Indicador de modo jogo
+- Status do processo helper (conectado/desconectado)
+
+
+==============================
+4. ABA DASHBOARD
+==============================
+
+Exibe cartões com informações em tempo real:
+- RAM Usada / Livre
+- Carga de Memória (%)
+- Pontuação de Pressão
+- Memória Comprometida
+- Memória em Espera (Standby)
+- Memória Comprimida
+- Memória Modificada
+- Número de Processos
+- Falhas de Página
+
+Abaixo dos cartões:
+- Gráfico de linha do tempo (Memory Timeline)
+- Botões "Smart Optimize" e "Deep Clean"
+- Checkbox "Auto-Optimize" para ativar otimização automática
+- Seletor de perfil (Economy, Balanced, Performance, Gaming)
+
+O gráfico permite sobrepor métricas como RAM Usage, Free RAM,
+Commit Usage e Standby Memory usando o seletor "Overlay".
+
+
+==============================
+5. ABA PROCESSES
+==============================
+
+Lista todos os processos em execução com:
+- PID
+- Nome do processo
+- Working Set (memória física em uso)
+- Memória Privada
+- Page File Usage
+- Page Faults
+- Threads
+- CPU %
+
+Clique duas vezes em um processo para abrir detalhes:
+- Working Set, Page Table, Handles, I/O
+- Prioridade, Data de Início
+- Dados de telemetria do processo
+
+Clique com o botão direito para:
+- Copiar nome e PID
+- Trim Working Set (liberar memória)
+- Definir prioridade
+- Encerrar processo
+
+
+==============================
+6. ABA LEAK HUNTER
+==============================
+
+Monitora processos em busca de vazamentos de memória:
+- Lista processos com crescimento anormal de memória
+- Exibe uso atual, pico e taxa de crescimento
+- Alerta quando um processo excede o limite configurado
+
+O limite de alerta pode ser ajustado nas Configurações
+(aba Leak Detection > Alert Threshold).
+
+
+==============================
+7. ABA MEMORY MAP
+==============================
+
+Exibe a distribuição de páginas de memória física:
+- Active: páginas em uso ativo
+- Standby: páginas em cache (prontas para reúso)
+- Modified: páginas modificadas
+- Modified No-Write: páginas modificadas sem gravação pendente
+- Transition: páginas em transição
+- Zeroed: páginas zeradas
+- Free: páginas livres
+- Bad: páginas com defeito
+
+Cada categoria mostra barra de progresso e valor em GB.
+
+
+==============================
+8. ABA SYSTEM INFO
+==============================
+
+Informações detalhadas do sistema:
+- Versão do Windows (build number)
+- Memória RAM total/livre
+- Memória Kernel (paginada e não-paginada)
+- Memória Virtual (usada/total)
+- Page File (usado/total)
+- Compressão de memória
+- Número de processadores lógicos
+
+Atualiza automaticamente a cada ciclo de telemetria.
+
+
+==============================
+9. ABA I/O
+==============================
+
+Exibe taxas de E/S de disco em tempo real por processo e do sistema:
+- Top Readers: processos com maiores taxas de leitura
+- Top Writers: processos com maiores taxas de gravação
+- I/O do Sistema: taxas agregadas de leitura/gravação
+- Taxa atual (Bps) e total de bytes transferidos
+
+A aba atualiza automaticamente a cada 2 segundos.
+Use os seletores "Top N" para ajustar a quantidade exibida.
+
+
+==============================
+10. ABA CONSOLE
+==============================
+
+Exibe o log de eventos do RAMFlux:
+- Mensagens de inicialização e desligamento
+- Resultados de limpeza
+- Erros e avisos
+- Informações de diagnóstico
+
+Use o filtro no topo para selecionar o nível mínimo exibido.
+Botão "Clear" para limpar o log.
+
+
+==============================
+11. ABA HEATMAP
+==============================
+
+A aba Heatmap (v2.14.0) exibe um mapa visual (treemap) de todos
+os processos em execução. Cada bloco representa um processo:
+- Tamanho do bloco: proporcional ao Working Set (memória em uso)
+- Cor: verde (pouco) → amarelo → laranja → rosa (muita RAM)
+- Processo em foreground: destacado com borda rosa
+- Hover: tooltip com nome completo, PID, Working Set, memória
+  privada, CPU% e número de threads
+- Cabeçalho: mostra % de uso de RAM e total usado/total GB
+
+O heatmap atualiza automaticamente a cada 2 segundos.
+
+Novidades na v2.14.1:
+- EcoQoS (Modo Eficiência): coloca processos em segundo plano em
+  modo de eficiência de CPU via SetProcessInformation(ProcessPowerThrottling);
+  reduz consumo de energia e aquecimento em notebooks (Win 10 1809+)
+- Limpeza Suave de Standby: limpeza em etapas com verificações de
+  fila de disco (queue <1.5) e pausas entre blocos; preserva páginas
+  de processos ativos elevando prioridades antes da limpeza
+- Orquestração Adaptativa de Standby (3 níveis): Nível 1 (HF crítico
+  + pressão alta) → limpeza suave; Nível 2 (HF crítico + standby
+  >1GB) → limpeza seletiva; Nível 3 (standby >2GB preventivo) →
+  limpeza suave
+- 6 correções de auditoria: 2 CRÍTICAS (GetLastError após LocalFree),
+  2 ALTAS (CreateFileW sem FILE_FLAG_OVERLAPPED, disablePrivilege com
+  constante errada), 2 MÉDIAS (readOk sempre TRUE, data race em
+  predictFuture)
+
+Novidades na v2.14.0:
+- Standby List Inteligente: limpeza seletiva da lista standby que
+  preserva páginas de processos críticos (foreground, alta memória)
+  elevando a prioridade de página antes de limpar
+- Otimização NUMA: detecta topologia NUMA e pina processos de jogo/
+  mineração no melhor node (mais memória livre, menos contenção L3)
+- Hard Fault Predictor 2.0: janela deslizante de 30 amostras com
+  regressão linear para prever hard faults 30s à frente; aciona
+  limpeza preventiva antes de tempestades de I/O
+- Process Memory Firewall: limites de memória por processo via
+  Job Objects; detecta vazamentos (crescimento >200MB em 10
+  amostras consecutivas) e coloca em quarentena com CPU throttling
+- System File Cache Tuner: reduz dinamicamente o cache de arquivos
+  durante jogos (128MB) e mineração (64MB); restaura valores
+  originais ao sair do modo
+- Memory Compression Manager: alterna proativamente para
+  MaxPerformance durante jogos/mineração; expande o decoder pool
+   automaticamente quando a taxa de acerto está baixa
+
+==============================
+12. ABA FORECAST (PREVISÃO)
+==============================
+
+A aba Forecast (v2.23.0) exibe previsões de pressão de memória
+em tempo real, com gráfico de overlay mostrando pressão real vs
+predita em 30s, 60s e 120s:
+
+- Gráfico com 5 séries: pressão atual (azul), predições passadas
+  (verde), forecast 30s (vermelho), 60s (vermelho escuro), 120s
+  (magenta)
+- Painel de Métricas de IA: acurácia %, contagens total/corretas/
+  FP/FN, score ML, confiança %, tendência
+- Status do ML Engine: número de amostras, erro médio, magnitude
+  dos pesos
+
+Atualiza automaticamente a cada 2 segundos.
+
+==============================
+13. ABA HEALTH (SAÚDE)
+==============================
+
+A aba Health (v2.25.0) exibe o índice de saúde geral do sistema
+usando scoring contínuo ponderado:
+
+- Pontuação geral (0-100): pressão 35%, commit 20%, hard faults
+  15%, tendência de page faults 10%, page file 10%, pool do
+  kernel 5%, compressão 5%
+- 5 categorias com notas próprias: Memory, Disk, I/O, Leaks, System
+- Gráfico "Health Score Trend" com evolução temporal da pontuação
+- Recomendações acionáveis baseadas na saúde atual
+
+==============================
+14. ABA PLUGINS
+==============================
+
+A aba Plugins (v2.21.0) gerencia plugins DLL de otimização:
+
+- Tabela com plugins carregados: nome, versão, status
+- Botões: Refresh (recarregar lista), Execute (executar todos),
+  Reload (recarregar DLLs)
+- Plugins são executados automaticamente no loop do Scheduler
+- Timeout de 5s por plugin via std::async
+- Aviso para plugins lentos (>500ms)
+
+Para adicionar um plugin:
+1. Coloque o arquivo .dll na pasta plugins/
+2. O plugin deve exportar createPlugin() / destroyPlugin()
+3. O PluginManager carrega automaticamente na inicialização
+
+==============================
+15. CONFIGURAÇÕES
+==============================
+
+Acesse pelo menu File > Settings.
+
+Perfil (Profile):
+- Economy: máxima economia de energia
+- Balanced: otimização padrão equilibrada
+- Performance: limpeza máxima
+- Gaming: modo anti-travamentos
+- Custom: configurações manuais
+
+Comportamento (Behavior):
+- Auto-optimization: ativa limpeza adaptativa automática
+- Game Mode Detection: detecta jogos em execução
+- Auto-detect full-screen games: detecta jogos em tela cheia
+- Start Minimized: inicia minimizado na bandeja
+- Start with Windows: inicia com o Windows
+- Notification: notificação após limpeza
+- Responsiveness Slider: ajusta o nível de responsividade do
+  sistema (0=Muito Baixo, 1=Baixo, 2=Normal, 3=Alto)
+- I/O Monitoring: ativa a aba I/O Dashboard
+
+Polling: intervalo de atualização (200-5000 ms)
+
+Leak Detection: limite de alerta para vazamentos (MB)
+
+Auto-Clean Threshold: limiar de memória livre para limpeza automática
+
+Clean Areas: selecione quais áreas limpar (Standby, Modified,
+Working Sets, File Cache, Combined List, Defrag)
+
+ProBalance: reduz prioridade de processos que consomem muita RAM
+
+Startup Optimization: limpeza inicial após a inicialização
+
+Scheduled Cleaning: limpeza agendada em intervalos regulares
+
+Suspender/Retomar Processos: permite suspender e retomar
+processos por PID. Processos suspensos vão para a lista
+standby e não consomem CPU. Ao retomar, voltam à execução
+normal.
+
+CPU Rate Limiting: define um limite máximo de uso de CPU
+(1-100%) via Windows Job Objects para processos que excedem
+um limite configurável de memória.
+
+Power Plan Automation: alterna automaticamente entre planos
+de energia do Windows conforme a atividade. Alterna para
+High Performance durante jogos/carga pesada, Balanced em
+uso normal e Power Saver na bateria.
+
+Network QoS: define prioridade de rede por processo (DSCP).
+Níveis: Very Low, Low, Normal, High. High é recomendado
+para jogos e aplicações em tempo real.
+
+
+==============================
+16. MODO JOGO E MODO MINERAÇÃO
+==============================
+
+Modo Jogo: quando ativado, o RAMFlux detecta jogos e:
+- Reduz a frequência de limpeza automática
+- Prioriza desempenho do jogo
+- Evita limpezas agressivas durante o jogo
+- Ativa otimização NUMA (pina o jogo no melhor node)
+- Reduz o cache de arquivos para 128MB
+- Ativa MaxPerformance no compression store
+- Detecção automática (tela cheia) ou por lista de jogos
+
+Modo Mineração (v2.14.0): otimizações similares para mineradores:
+- Reduz o cache de arquivos para 64MB
+- Pina o minerador no melhor node NUMA
+- Aplica limites do Memory Firewall para evitar que vazamentos
+  de memória do minerador afetem o sistema
+
+
+==============================
+17. PROBALANCE
+==============================
+
+O ProBalance monitora processos com alto consumo de memória.
+Quando um processo excede o limite configurado, sua prioridade
+é reduzida para BELOW_NORMAL, liberando recursos para outros
+processos. Quando o consumo do processo diminui, a prioridade
+original é restaurada.
+
+Configuração:
+- Ativar em Settings > ProBalance
+- Ajustar o limite de memória (128-4096 MB)
+
+
+==============================
+18. PROCESS RULES (REGRAS DE PROCESSO)
+==============================
+
+O Process Rules Engine permite criar regras persistentes que são
+automaticamente aplicadas a processos sempre que detectados. As
+regras são salvas em Configurações e persistem entre reinícios.
+
+Tipos de regra:
+- CPU Priority: define a prioridade de CPU do processo
+- IO Priority: define a prioridade de E/S do processo
+- Page Priority: define a prioridade de página (Superfetch)
+- CPU Affinity: define em quais CPUs o processo pode executar
+- Memory Priority: define a prioridade de memória do processo
+- Suspend: suspende o processo (move para a lista standby e
+  interrompe o consumo de CPU) — v2.44.2
+- Resume: retoma a execução de um processo suspenso — v2.44.2
+
+Escopo por carga de trabalho (v2.44.2):
+- Cada regra pode ser restrita a um tipo de carga detectada
+  (Game, Mining, Heavy ou Office) pelo campo Workload Condition
+- A regra só é aplicada quando a carga ativa do sistema
+  corresponde à configurada; com valor 0 (padrão) a regra
+  vale para qualquer carga
+
+Padrões de correspondência:
+- Nome exato: "chrome.exe" corresponde apenas ao chrome.exe
+- Wildcard: "chrome*" corresponde a qualquer processo começando com "chrome"
+- Wildcard: "*notepad*" corresponde a qualquer processo contendo "notepad"
+
+Para adicionar uma regra:
+1. Acesse File > Settings > Process Rules
+2. Clique "Add Rule"
+3. Selecione o tipo, valor e padrão de nome
+4. Marque "Enabled" para ativar
+
+As regras são aplicadas automaticamente na detecção do processo
+(a cada 5 segundos) e revertidas quando a regra é removida.
+
+
+==============================
+19. CPU AFFINITY MANAGER
+==============================
+
+O CPU Affinity Manager permite selecionar visualmente em quais
+núcleos lógicos um processo pode executar.
+
+Para usar:
+1. Acesse File > Settings > Process Rules
+2. Adicione ou edite uma regra do tipo "CPU Affinity"
+3. Clique "Select Affinity" para abrir o seletor
+4. Marque/desmarque os checkboxes dos CPUs desejados
+5. Use "Select All" ou "Clear All" para atalho
+
+O diálogo exibe um checkbox por CPU lógico do sistema,
+organizados em linhas de 8 CPUs.
+
+
+==============================
+20. PROCESS WATCHDOG
+==============================
+
+O Process Watchdog monitora continuamente o consumo de memória
+dos processos e executa ações automáticas quando um limite é
+ultrapassado.
+
+Configuração:
+1. Acesse File > Settings > Watchdog Rules
+2. Clique "Add Watchdog Rule"
+3. Defina:
+   - Pattern: padrão de nome do processo (ex: "chrome*")
+   - Threshold (MB): limite de memória Working Set
+   - Duration (ms): tempo mínimo acima do limite antes de agir
+   - Action: ação a ser executada
+
+Ações disponíveis:
+- Terminate: encerra o processo
+- Restart: encerra e reinicia o processo automaticamente
+- Suspend: suspende o processo (pausa a execução) — v2.44.2
+- Resume: retoma a execução do processo suspenso — v2.44.2
+- Set CPU Priority: altera a prioridade de CPU
+- Set IO Priority: altera a prioridade de E/S
+- Set CPU Affinity: altera a afinidade de CPU
+- Log: apenas registra no log (sem ação)
+
+Ações Suspend/Resume nunca são aplicadas ao próprio RAMFlux,
+a processos críticos do sistema nem a PIDs baixos (PID <= 4).
+Processos suspensos podem ser retomados manualmente pela
+aba Processes (menu de contexto).
+
+O watchdog verifica os processos a cada 5 segundos.
+
+
+==============================
+21. POWER PLAN AUTOMATION (PLANO DE ENERGIA)
+==============================
+
+O Power Plan Automation alterna automaticamente o plano de
+energia do Windows de acordo com a atividade do sistema:
+
+- High Performance: ativado durante jogos ou carga pesada
+- Balanced: padrão durante uso normal
+- Power Saver: ativado ao usar bateria
+
+Configuração:
+1. Acesse File > Settings
+2. Ative "Power Plan Automation"
+3. O plano ativo é exibido na aba System Info
+4. É possível alterar manualmente pelo ícone de energia
+   da bandeja do Windows
+
+O plano anterior é restaurado quando a atividade termina.
+
+
+==============================
+22. NETWORK QOS (PRIORIDADE DE REDE)
+==============================
+
+O Network QoS atribui marcações DSCP (Differentiated Services
+Code Point) a processos, permitindo que o Windows priorize o
+tráfego de rede.
+
+Níveis de prioridade:
+- Very Low (DSCP 0): transferências em segundo plano
+- Low (DSCP 8): tráfego não crítico
+- Normal (DSCP 0): padrão
+- High (DSCP 46): Express Forwarding — recomendado para jogos,
+  VoIP e aplicações em tempo real
+
+Configuração:
+1. Acesse File > Settings
+2. Ative "Network QoS"
+3. Configure regras por processo (veja Process Rules)
+
+
+==============================
+23. RESPONSIVENESS SLIDER (CONTROLE DE RESPONSIVIDADE)
+==============================
+
+O Responsiveness Slider permite controlar a relação entre
+taxa de transferência em segundo plano e responsividade do
+sistema em primeiro plano.
+
+Níveis:
+- 0 (Very Low): máxima taxa em segundo plano, pode parecer
+  lento
+- 1 (Low): equilibrado com viés para segundo plano
+- 2 (Normal): equilibrado (padrão)
+- 3 (High): máxima responsividade, ideal para jogos ou
+  trabalho interativo
+
+Ajuste em Settings > Behavior > Responsiveness Slider.
+As alterações têm efeito imediato.
+
+
+==============================
+24. SOLUÇÃO DE PROBLEMAS
+==============================
+
+O RAMFlux não abre:
+- Verifique se o Visual C++ Redistributable está instalado
+- Verifique a aba Console por mensagens de erro
+
+Limpeza não funciona:
+- RAMFlux.exe roda sem privilégios elevados; as operações
+  de limpeza são executadas pelo RAMFluxHelper.exe
+- Se o helper não estiver rodando, a limpeza ficará
+  indisponível (monitoramento continua normalmente)
+- Para iniciar o helper: execute qualquer ação de limpeza —
+  o RAMFlux exibirá um prompt para lançar o helper (UAC
+  necessário apenas uma vez)
+- Verifique se a Scheduled Task existe e está ativada:
+  schtasks /query /tn "RAMFluxHelper"
+- Verifique se o serviço "Superfetch/SysMain" está ativo
+
+RAMFluxHelper não inicia automaticamente:
+- O helper registra uma Scheduled Task na primeira execução.
+  Se o registro falhou, reinstale o MSI como Administrador.
+- Para recriar a tarefa manualmente, execute o helper uma vez
+  como Administrador: RAMFluxHelper.exe
+
+O aplicativo fecha sozinho:
+- Execute o diagnóstico em Settings > Behavior
+- Verifique o Console por mensagens de erro
+- Atualize para a versão mais recente
+
+Erro "Access Denied" ao limpar:
+- RAMFluxHelper.exe não está rodando ou está com privilégios
+  insuficientes
+- Inicie o helper clicando em "Launch Helper" no prompt de
+  limpeza, ou execute RAMFluxHelper.exe como Administrador
+  manualmente
+
+Notas de Segurança (v2.13.0):
+- O pipe nomeado do helper agora usa um DACL restritivo
+  permitindo apenas SYSTEM e Administradores se conectarem
+- O helper verifica se o cliente está na mesma sessão,
+  prevenindo ataques de elevação entre sessões
+- Dumps de falha são gravados com FILE_ATTRIBUTE_SYSTEM para
+  reduzir exposição acidental de conteúdo sensível da memória
+- CLI --dump_duration agora é limitado a 5-600 segundos
+
+Auditoria de Segurança & Thread Safety (v2.42.0):
+- 24 bugs corrigidos em 15 arquivos fonte: 6 CRÍTICOS,
+  7 ALTOS, 11 MÉDIOS
+- CRÍTICO: Use-after-free no PowerManager (lista de callbacks
+  iterada sem mutex enquanto unsubscribe() podia apagar elementos)
+- CRÍTICO: Use-after-free no ProfileManager (onProfileChanged()
+  não tinha unsubscribe; adicionada API baseada em token)
+- CRÍTICO: Data race em activeRuleCount (m_appliedRules.size()
+  lido sem lock)
+- CRÍTICO: Data race no MemoryDedup (m_lastScan/m_lastReport
+  acessados sem mutex)
+- CRÍTICO: Comportamento indefinido no ConfigIO (enum
+  desserializado do JSON sem validação de faixa)
+- ALTO: Data race no NetworkQoS (m_lastUpdate não atômico,
+  lido/escrito sem mutex)
+- ALTO: Double-checked locking no cacheIpHlp (s_iphlpCached
+  verificado sem mutex)
+- ALTO: LPE no pipe nomeado (pipe do RAMFluxHelper concedia
+  Generic All para Interactive Users; substituído por SID
+  do usuário atual via GetTokenInformation)
+- ALTO: TOCTOU na verificação do cliente do pipe (checagem
+  de caminho ocorria após RevertToSelf(); movida para dentro
+  da janela de impersonação)
+- ALTO: Handle leak no FluxGameMode (m_gameHandle sobrescrito
+  sem CloseHandle no valor anterior)
+- ALTO: malloc sem verificação no RAMFluxHelper (tokenUser
+  desreferenciado sem checagem de nulo)
+- MÉDIO: Data race no ProcessCache m_detailCounter, underflow
+  em getTcpCounts/getUdpCounts, race pid/name no FluxGameMode/
+  MiningMode, OOB no main.cpp, overflow em enumeração de
+  registro, startupDelaySec sem clamp, HandleCloser feito
+  não copiável
+
+Auditoria Thread Safety v2 (v2.43.0):
+- 8 bugs corrigidos: 1 CRÍTICO deadlock, 4 ALTOS data
+  races, 3 MÉDIOS data races
+- DiagnosticsEngine: callbacks invocados segurando
+  m_mutex causavam deadlock se callback chamasse
+  unsubscribe(); corrigido copiando lista de callbacks
+  sob lock e invocando fora
+- HeuristicEngine: m_lastCleanTime escrito da thread
+  de dispatch do EventBus sem lock enquanto lido sob
+  m_mutex; substituído por atomic int64 epoch
+- HeuristicEngine: subscriptions do EventBus para
+  cleaning events nunca removidas (dangling this após
+  shutdown); IDs armazenados e removidos no shutdown
+- FluxClassifier: setConfig() escrevia m_config sem
+  mutex enquanto classifyImpl() lia sob m_mutex;
+  setConfig() agora usa lock
+- FluxNTAPI: HardFaultHistory::samples.size() acessado
+  sem segurar mtx; método size() com lock adicionado
+- FluxScheduler: m_originalIntervalMs era int simples
+  lido/escrito sem sincronização
+- Logger: m_maxBackupFiles, m_compressBackups escritos
+  sem lock, lidos sob m_mutex; tornados atômicos
+- PluginManager: lambda async capturava &p referência
+  para vector (dangling se vector redimensionado);
+  captura raw IPlugin* por valor
+
+Auditoria Segurança, Thread Safety & Corretude v3 (v2.44.0):
+- 28 bugs corrigidos: 5 CRÍTICOS, 12 ALTOS, 11 MÉDIOS
+- CRÍTICO: FluxTelemetry UAF — m_collectionRequest era
+  HANDLE bruto sem sync; substituído por atomic<HANDLE>
+- CRÍTICO: Bypass auth named pipe — comparação
+  prefix+suffix permitia impersonation; agora full-path
+- CRÍTICO: PluginManager cancel-thread —
+  executeAllWithTimeout() sem ponto de cancelamento;
+  removido, apenas executeAll() permanece
+- CRÍTICO: PluginManager DLL hijacking —
+  LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR vulnerável a side-
+  loading; flag removida, try/catch adicionado
+- ALTO: Named pipe instance hoarding —
+  PIPE_UNLIMITED_INSTANCES limitado a 2
+- ALTO: PluginManager sandbox — setProcessPriority e
+  setProcessIoPriority rejeitam PID<=4 e self-PID
+- ALTO: getCacheTopology DCLP — double-checked locking
+  quebrado substituído por std::call_once
+- ALTO: 3x race em cálculos de taxa — disco queue
+  length, hard fault prediction, predictive hard fault
+  info; pares atômicos substituídos por std::mutex
+- ALTO: 4x data race em bools — s_ioCached, s_powerCached,
+  s_powerWriteCached, s_ntdllCached tornados atomic<bool>
+- ALTO: MainWindow ProfileManager callback — unsubscribe
+  por token no destructor
+- ALTO: Smart Optimize duplicação — deepClean() substituído
+  por quickClean() para comportamento distinto
+- ALTO: HeuristicEngine m_effectiveness race — leitura
+  sob m_mutex
+- ALTO: FluxClassifier config() race — lock_guard
+  adicionado
+- MÉDIO: PressurePredictor R² — intercept corrigido
+  para intercepto de regressão em vez de primeiro sample
+- MÉDIO: FluxClassifier m_history — entradas stale
+  (>10min) agora limpas a cada recordSample()
+- MÉDIO: ConsoleWidget m_allLines — limitado a 10000
+- MÉDIO: ProcessRulesEngine — svchost.exe e dwm.exe
+  adicionados à lista de processos críticos
+- MÉDIO: ProcessRulesEngine glob — pattern matching
+  multi-wildcard substituído por matcher com backtracking
+- MÉDIO: getCacheTopology — guarda Size==0 adicionado
+  para evitar loop infinito
+- MÉDIO: trimAllProcesses — PID<=4 agora ignorado
+- MÉDIO: FluxTelemetry primeira coleta — exceções agora
+  logadas em vez de silenciosamente engolidas
+- MÉDIO: PressurePredictor — vector substituído por deque
+  para pop_front O(1)
+
+Auditoria Segurança, Thread Safety & Corretude v4 (v2.44.1):
+- 21 bugs corrigidos: 2 CRÍTICOS, 5 ALTOS, 10 MÉDIOS, 4 BAIXOS
+- CRÍTICO: Self-deadlock da Power API — cachePowerApi()/
+  cachePowerWriteApi() re-lockavam s_powerMutex enquanto os
+  chamadores já o detinham (UB no primeiro acesso power-plan)
+- CRÍTICO: ModuleManager shutdownAll() — fazia join de
+  threads workers segurando m_mutex, deadlock em getModule()
+- ALTO: Guarda PID do Helper — TRIM:<pid> agora rejeita
+  PID<=4 e self-PID
+- ALTO: Nome de módulo errado nos widgets — "Scheduler"
+  corrigido para "FluxScheduler" nos widgets de Hibernate/
+  Responsiveness/PowerPlan (3 widgets ficavam inertes)
+- ALTO: HibernateWidget pressão fabricada — evaluate() não
+  é mais chamado com 0.0 fixo; usa snapshot ao vivo
+- ALTO: Perfil salvo restaurado no startup a partir do
+  QSettings
+- ALTO: SettingsDialog — todas as opções agora carregam
+  independente do perfil selecionado (antes limitado a Custom)
+- MÉDIO: HelperClient overlapped write — WriteFile em pipe
+  FILE_FLAG_OVERLAPPED agora passa OVERLAPPED
+- MÉDIO: setAutostart — resultado de GetModuleFileNameW
+  verificado e buffer zerado
+- MÉDIO: HibernateAssist m_lastAdvice race — mutex adicionado
+- MÉDIO: IoMonitor m_systemStats race — escrita movida para
+  sob mutex
+- MÉDIO: EventBus callback enfileirado UAF — subscriptions
+  obsoletas ignoradas no dispatch via conjunto de ids ativos
+- MÉDIO: Threshold do LeakHunter — setThresholdMB() agora é
+  realmente aplicado a partir das Configurações
+- MÉDIO: Deep Clean — falha agora é exibida na barra de status
+- MÉDIO: Epoch do clean agendado — não avança mais quando
+  canClean() retorna false
+- MÉDIO: Forecast widget — pressão atual passada em vez de
+  duplicar o previsto de 30s
+- BAIXO: QString::arg com placeholder %.1f corrigido para %1
+- BAIXO: privilégio do helper agora desabilitado em paths
+  de erro
+- BAIXO: ConfigIO — casts double-para-uint64 protegidos
+  contra valores negativos
+
+Versão 2.52.0 — Sétima Auditoria (Fase 1 & 2):
+- Thread de UI: NtApi off-UI via QtConcurrent (IoDashboard, ProcessList, Settings, MainWindow)
+- CI blindado: windeployqt + teste MSI + portable ZIP
+- Standby inteligente por prioridade (LOWEST/BELOW_NORMAL/NORMAL por pressão)
+- Portable ZIP + CLI --optimize --json --once
+- Timeline reativada + explicabilidade + marcadores GAME/MINER
+- HeuristicEngine predição crítica 60s + previsão na UI
+- Protótipo Dedup + NUMA (offer + rebalance)
+
+Versão 2.51.0 — Sexta Auditoria (segurança e estabilidade):
+- NTAPI: contabilização corrigida de memória standby/modificada/página/compressão
+- NTAPI: proteção de processos críticos de sistema em suspend/limite/quarentena/trim
+- UpdateChecker: validação estrita de URL de release (allowlist host + caminho)
+- IPC Helper: autenticação mútua de pipe (PID do servidor + verificação de imagem)
+- Plugins: correção de traversal de caminho absoluto, flags seguras LoadLibraryEx
+- Benchmark: flag de cancelamento atômica, sanitização de traversal em caminho de relatório
+- Correções PID-reuse/TOCTOU (Memory Firewall, ProcessSuspender, ProcessListWidget)
+- Auto-exclusão de self/críticos em MemoryDedup & LeakHunter
+- GameMode/Mining: restaura própria prioridade/afinidade de processo ao encerrar
+- MemoryQoS: reverte estado de página/E/S/eficiência quando regra deixa de aplicar
+- Diagnostics: setEnabled agora efetivamente controla a avaliação
+- Optimizer: sinal de pressão de memória cacheada corrigido
+- Mapas de histórico/amostra ilimitados delimitados (scheduler, analyzer)
+
+Versão 2.50.0 — Quinta Auditoria: 30 correções de bugs:
+- Correção de shutdown: EventBus agora para antes dos módulos
+  (impede use-after-free durante desligamento)
+- Data race em StandbyScanner corrigido (distributeClean sob lock)
+- Online stats do MLEngine corrigido (média salva antes de update)
+- BenchmarkWidget: wait com timeout (impede congelamento da UI)
+- PluginManager: use-after-move corrigido
+- ProcessRulesEngine: array QSettings truncado corretamente
+- FluxClassifier: proteção contra NaN em desvio padrão
+- MainWindow: callbacks ProfileManager e PowerManager com QPointer
+- FluxNTAPI: cache de power API, leak de privilégio e GUID corrigidos
+- PowerManager: detecção real de mudança de plano de energia
+- BenchmarkRunner: double-counting removido e contador static corrigido
+- ProcessCache: cold page detection restaurado (wsSnapshot transferido)
+- FluxCleaner: eventos aninhados removidos e stats corrigidos
+- FluxScheduler: battery boost protegido contra re-entrada
+- GlobalMemoryStatusEx agora verificado em todas as chamadas
+- Contadores de compressão separados (inefficient vs harmful)
+
+Versão 2.44.2:
+- Índice de Saúde científica (v2.44.2): a pontuação geral de
+  saúde passa a usar um scoring contínuo ponderado em vez de
+  cortes fixos, com pesos: pressão de memória 35%, commit 20%,
+  hard faults 15%, tendência de page faults 10%, page file 10%,
+  pool não-paginado do kernel 5% e compressão 5%. Cada categoria
+  (Memory, Disk, I/O, Leaks, System) recebe nota própria
+- Aba Health agora inclui o gráfico "Health Score Trend", que
+  plota a evolução da pontuação geral ao longo do tempo
+- Optimizer preditivo por IA (v2.44.2): quando a previsão de
+  pressão do Heuristic Engine indica pico (confiança >= 60%),
+  a limpeza é executada preventivamente antes do pico — limpeza
+  seletiva para pressão alta, limpeza profunda para pressão
+  crítica — com intervalo mínimo de 2 minutos entre execuções;
+  a limpeza é adiada em casos de anomalia, E/S de disco alta
+  ou bateria baixa
+- Ações Suspend/Resume em Process Rules e no Process Watchdog
+- Regras de processo com escopo por carga de trabalho
+  (Workload Condition): a regra só aplica quando a carga ativa
+  (Game, Mining, Heavy, Office) corresponde à configurada
+
+==============================
+© 2026 RAMFlux Technologies

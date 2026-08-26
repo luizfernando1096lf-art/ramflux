@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.52.0] - 2026-08-25
+
+### UI Thread (M1/M2) & CI
+- **Off-UI thread** - `IoDashboardWidget` `getDiskQueueLength`, `ProcessListWidget` 7 NtApi calls, `SettingsDialog` diagnostics (9 calls), `MainWindow` `isFullScreenAppActive`/`getPhysicalMemoryBreakdown` movidos para `QtConcurrent` + `QFutureWatcher`
+- **CI blindado** - `windeployqt6` + verificação `libbrotlidec.dll` + `wix build` MSI + smoke test, `package_portable.ps1` para ZIP
+
+### Standby & CLI
+- **Standby inteligente** - `FluxCleaner::intelligentStandbyClean()` com prioridade `LOWEST/BELOW_NORMAL/NORMAL` por `pressureScore`, integrado em `adaptiveClean`
+- **CLI headless** - `RAMFlux.exe --optimize --json --once` (intelligent standby + trimColdPages, JSON `{optimized,recoveredMB,pressure,standbyMB}`), `--help`
+
+### Timeline & AI
+- **Timeline** - `HistoryChart` reativado com `QScatterSeries` para eventos `GAME`/`MINER`, `addEventMarker()`, `QLabel` explicativo `Pressão 78% → ...` + `Previsto 85% em 60s`
+- **HeuristicEngine 60s** - `PressurePredicted` quando `pred60>=85% && conf>=60%`, log de pre-emptive, `MainWindow` mostra previsão
+- **Dedup + NUMA (protótipo)** - `MemoryDedup::tryOfferDuplicates()` e `HeuristicEngine::balanceNumaIfNeeded()` a cada 60s (migra 1 processo se desbalanceamento >2GB)
+
 ## [2.51.0] - 2026-08-24
 
 ### Critical / High (Sixth Audit)

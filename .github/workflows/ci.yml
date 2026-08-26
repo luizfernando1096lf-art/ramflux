@@ -56,7 +56,7 @@ jobs:
       - name: Package Portable ZIP
         shell: pwsh
         run: |
-          pwsh -File scripts/package_portable.ps1 -Version "2.51.0" -DeployDir "build2/deploy"
+          pwsh -File scripts/package_portable.ps1 -Version "2.52.0" -DeployDir "build2/deploy"
           Get-Item RAMFlux-*.zip | Format-List Length,Name
 
       - name: Smoke test

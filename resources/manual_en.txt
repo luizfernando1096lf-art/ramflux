@@ -1,0 +1,815 @@
+==============================
+        RAMFlux - User Manual
+==============================
+Version 2.52.0
+
+TABLE OF CONTENTS
+1. Introduction
+2. Installation
+3. Main Interface
+4. Dashboard Tab
+5. Processes Tab
+6. Leak Hunter Tab
+7. Memory Map Tab
+8. System Info Tab
+9. I/O Tab
+10. Console Tab
+11. Heatmap Tab
+12. Forecast Tab
+13. Health Tab
+14. Plugins Tab
+15. Settings
+16. Game Mode and Mining Mode
+17. ProBalance
+18. Process Rules
+19. CPU Affinity Manager
+20. Process Watchdog
+21. Power Plan Automation
+22. Network QoS
+23. Responsiveness Slider
+24. Troubleshooting
+
+==============================
+1. INTRODUCTION
+==============================
+
+RAMFlux is a memory monitoring and optimization tool for Windows.
+It provides real-time system memory information, cache cleaning
+capabilities, and management of high-RAM processes.
+
+
+==============================
+2. INSTALLATION
+==============================
+
+⚠️ The installer MUST be run as Administrator.
+
+Run the MSI installer as Administrator and follow the on-screen
+instructions. RAMFlux will be installed in Program Files and a
+shortcut will be created in the Start Menu.
+
+The installer includes RAMFluxHelper.exe, a privileged helper
+process that performs memory cleaning operations with maximum
+privileges. On the first run, the helper auto-registers a
+Scheduled Task (on-logon) so subsequent logons do not require
+UAC prompts. The helper's named pipe is secured with a
+restrictive DACL (SYSTEM and Administrators only) and verifies
+the client's session ID to prevent unauthorized access.
+
+Requirements:
+- Windows 10 or 11 (64-bit)
+- 4 GB RAM (minimum)
+- 200 MB disk space
+
+
+==============================
+3. MAIN INTERFACE
+==============================
+
+RAMFlux is organized into tabs at the top of the window:
+
+- Dashboard: system overview
+- Processes: process list with memory usage
+- Leak Hunter: memory leak detection
+- Memory Map: physical memory page distribution
+- System Info: detailed system information
+- I/O: per-process and system-wide I/O rates
+- Console: event log and diagnostics
+- Heatmap: visual process memory treemap (v2.14.0)
+- Forecast: pressure prediction and AI metrics (v2.23.0)
+- Health: system health index (v2.25.0)
+- Plugins: DLL plugin management (v2.21.0)
+
+The status bar at the bottom shows:
+- Current optimizer status
+- Cleaning statistics
+- Game mode indicator
+- Helper process status (connected/disconnected)
+
+
+==============================
+4. DASHBOARD TAB
+==============================
+
+Displays real-time information cards:
+- Used / Free RAM
+- Memory Load (%)
+- Pressure Score
+- Committed Memory
+- Standby Memory
+- Compressed Memory
+- Modified Memory
+- Process Count
+- Page Faults
+
+Below the cards:
+- Memory Timeline chart
+- "Smart Optimize" and "Deep Clean" buttons
+- "Auto-Optimize" checkbox for automatic optimization
+- Profile selector (Economy, Balanced, Performance, Gaming)
+
+The chart supports overlay metrics: RAM Usage, Free RAM,
+Commit Usage, and Standby Memory via the Overlay selector.
+
+
+==============================
+5. PROCESSES TAB
+==============================
+
+Lists all running processes with:
+- PID
+- Process name
+- Working Set (physical memory in use)
+- Private Memory
+- Page File Usage
+- Page Faults
+- Threads
+- CPU %
+
+Double-click a process for details:
+- Working Set, Page Table, Handles, I/O
+- Priority, Start Time
+- Process telemetry data
+
+Right-click for:
+- Copy name and PID
+- Trim Working Set
+- Set priority
+- Terminate process
+
+
+==============================
+6. LEAK HUNTER TAB
+==============================
+
+Monitors processes for memory leaks:
+- Lists processes with abnormal memory growth
+- Shows current usage, peak, and growth rate
+- Alerts when a process exceeds the configured threshold
+
+The alert threshold can be adjusted in Settings
+(Leak Detection > Alert Threshold).
+
+
+==============================
+7. MEMORY MAP TAB
+==============================
+
+Displays physical memory page distribution:
+- Active: pages in active use
+- Standby: cached pages (ready for reuse)
+- Modified: modified pages
+- Modified No-Write: modified pages without pending write
+- Transition: pages in transition
+- Zeroed: zeroed pages
+- Free: free pages
+- Bad: defective pages
+
+Each category shows a progress bar and size in GB.
+
+
+==============================
+8. SYSTEM INFO TAB
+==============================
+
+Detailed system information:
+- Windows version (build number)
+- Total/Free RAM
+- Kernel Memory (paged and non-paged)
+- Virtual Memory (used/total)
+- Page File (used/total)
+- Memory compression
+- Logical processor count
+
+Auto-updates every telemetry cycle.
+
+
+==============================
+9. I/O TAB
+==============================
+
+Displays real-time disk I/O rates per process and system-wide:
+- Top Readers: processes with highest read rates (sorted)
+- Top Writers: processes with highest write rates (sorted)
+- System I/O: aggregate read/write rates for the entire system
+- Current rate (Bps), total bytes transferred
+
+The tab auto-updates every 2 seconds.
+Use the "Top N" selectors to adjust how many processes to show.
+
+
+==============================
+10. CONSOLE TAB
+==============================
+
+Displays the RAMFlux event log:
+- Startup and shutdown messages
+- Cleaning results
+- Errors and warnings
+- Diagnostics information
+
+Use the filter at the top to select the minimum log level.
+"Clear" button to clear the log.
+
+
+==============================
+11. HEATMAP TAB
+==============================
+
+The Heatmap tab (v2.14.0) displays a visual treemap of all running
+processes, where each block represents a process:
+- Block size: proportional to the process Working Set (memory in use)
+- Block color: green (low) → yellow → orange → pink (high RAM ratio)
+- Foreground process: highlighted with a pink border
+- Hover: shows tooltip with full name, PID, Working Set, Private
+  memory, CPU%, and thread count
+- Legend: header shows overall RAM usage % and total used/total GB
+
+The heatmap auto-updates every 2 seconds alongside the dashboard.
+
+New in v2.14.1:
+- EcoQoS (Efficiency Mode): puts background processes into CPU
+  efficiency mode via SetProcessInformation(ProcessPowerThrottling);
+  reduces power consumption and heat on notebooks (Win 10 1809+)
+- Gentle Standby Clean: chunked standby cleaning with disk queue
+  guards (queue <1.5) and sleep intervals between chunks; elevates
+  active process page priorities before flushing
+- Adaptive Standby Orchestration (3-tier): Tier 1 (HF critical +
+  high pressure) → gentle clean; Tier 2 (HF critical + standby >1GB)
+  → selective clean; Tier 3 (standby >2GB preventive) → gentle clean
+- 6 audit fixes: 2 CRITICAL (GetLastError after LocalFree), 2 HIGH
+  (missing FILE_FLAG_OVERLAPPED, disablePrivilege wrong constant),
+  2 MEDIUM (readOk unconditional TRUE, predictFuture data race)
+
+New in v2.14.0:
+- Standby List Inteligente: selective standby cache cleaning that
+  preserves pages belonging to critical processes (foreground,
+  high-memory apps) by elevating their page priority before flushing
+- NUMA Optimization: automatically detects NUMA topology and pins
+  game/miner processes to the best NUMA node (most free memory,
+  least L3 cache contention)
+- Hard Fault Predictor 2.0: uses a 30-sample sliding window with
+  linear regression to predict hard fault rate 30 seconds ahead;
+  preemptively triggers cleaning before I/O storms occur
+- Process Memory Firewall: sets per-process memory limits via
+  Windows Job Objects; detects memory leaks (200MB growth over 10
+  consecutive samples) and quarantines offending processes with
+  CPU throttling
+- System File Cache Tuner: dynamically reduces the system file
+  cache during gaming (128MB) and mining (64MB) workloads, then
+  restores original values when the workload ends
+- Memory Compression Manager: proactively switches the compression
+  store to MaxPerformance mode during gaming/mining; expands the
+  decoder pool automatically when hit rate is low
+
+==============================
+12. FORECAST TAB
+==============================
+
+The Forecast tab (v2.23.0) displays real-time memory pressure
+predictions with an overlay chart showing actual vs predicted
+pressure at 30s, 60s, and 120s horizons:
+
+- Chart with 5 series: current pressure (blue), past predictions
+  (green), 30s forecast (red), 60s forecast (dark red), 120s
+  forecast (magenta)
+- AI Metrics panel: accuracy %, total/correct/FP/FN counts, ML
+  score, confidence %, trend
+- ML Engine status: sample count, mean error, weight magnitudes
+
+Updates automatically every 2 seconds.
+
+==============================
+13. HEALTH TAB
+==============================
+
+The Health tab (v2.25.0) displays the overall system health index
+using continuous weighted scoring:
+
+- Overall score (0-100): pressure 35%, commit 20%, hard faults
+  15%, page fault trend 10%, page file 10%, kernel pool 5%,
+  compression 5%
+- 5 categories with individual grades: Memory, Disk, I/O, Leaks,
+  System
+- "Health Score Trend" chart with temporal evolution of the score
+- Actionable recommendations based on current health
+
+==============================
+14. PLUGINS TAB
+==============================
+
+The Plugins tab (v2.21.0) manages optimization DLL plugins:
+
+- Table with loaded plugins: name, version, status
+- Buttons: Refresh (reload list), Execute (run all), Reload
+  (reload DLLs)
+- Plugins are executed automatically in the Scheduler loop
+- 5s timeout per plugin via std::async
+- Warning for slow plugins (>500ms)
+
+To add a plugin:
+1. Place the .dll file in the plugins/ folder
+2. The plugin must export createPlugin() / destroyPlugin()
+3. PluginManager loads automatically on initialization
+
+==============================
+15. SETTINGS
+==============================
+
+Access via File > Settings.
+
+Profile:
+- Economy: maximum power saving
+- Balanced: balanced default optimization
+- Performance: maximum cleanup
+- Gaming: anti-stutter mode
+- Custom: manual settings
+
+Behavior:
+- Auto-optimization: enables automatic adaptive cleaning
+- Game Mode Detection: detects running games
+- Auto-detect full-screen games: detects full-screen apps
+- Start Minimized: starts minimized to tray
+- Start with Windows: starts with Windows boot
+- Notification: show notification after cleaning
+- Responsiveness Slider: adjust system responsiveness level
+  (0=Very Low, 1=Low, 2=Normal, 3=High)
+- I/O Monitoring: enables the I/O Dashboard tab
+
+Polling: update interval (200-5000 ms)
+
+Leak Detection: alert threshold for memory leaks (MB)
+
+Auto-Clean Threshold: free memory threshold for auto-clean
+
+Clean Areas: select areas to clean (Standby, Modified,
+Working Sets, File Cache, Combined List, Defrag)
+
+ProBalance: lowers priority of memory-heavy processes
+
+Startup Optimization: initial clean after system startup
+
+Scheduled Cleaning: schedule regular deep cleaning
+
+Process Suspend/Resume: allows suspending and resuming processes
+by PID. Suspended processes are moved to the standby list and
+consume no CPU time. Resume restores normal execution.
+
+CPU Rate Limiting: sets a hard CPU usage cap (1-100%) via
+Windows Job Objects for processes that exceed a configurable
+memory threshold.
+
+Power Plan Automation: automatically switches between Windows
+power plans based on system activity. Switches to High
+Performance during gaming/heavy load, Balanced during normal
+use, and Power Saver on battery.
+
+Network QoS: sets per-process network priority (DSCP tagging)
+for processes. Priority levels: Very Low, Low, Normal, High.
+High priority is recommended for games and real-time apps.
+
+
+==============================
+16. GAME MODE & MINING MODE
+==============================
+
+Game Mode: when enabled, RAMFlux detects running games and:
+- Reduces automatic cleaning frequency
+- Prioritizes game performance
+- Avoids aggressive cleaning during gameplay
+- Activates NUMA optimization (pins game to best NUMA node)
+- Reduces system file cache to 128MB for lower latency
+- Sets compression store to MaxPerformance mode
+- Detection can be automatic (full-screen) or by known game list
+
+Mining Mode (v2.14.0): similar optimizations for cryptocurrency
+miners:
+- Reduces system file cache to 64MB
+- Pins miner process to best NUMA node
+- Applies Process Memory Firewall limits to prevent memory leaks
+  from crashing the system
+- Activates selective standby cleaning to preserve miner pages
+
+
+==============================
+17. PROBALANCE
+==============================
+
+ProBalance monitors high-memory processes. When a process
+exceeds the configured threshold, its priority is lowered
+to BELOW_NORMAL, freeing resources for other processes.
+When the process memory usage drops, the original priority
+is restored.
+
+Configuration:
+- Enable in Settings > ProBalance
+- Adjust memory threshold (128-4096 MB)
+
+
+==============================
+18. PROCESS RULES
+==============================
+
+The Process Rules Engine lets you create persistent rules that are
+automatically applied to matching processes whenever they are
+detected. Rules are saved in Settings and persist across restarts.
+
+Rule types:
+- CPU Priority: sets the process CPU priority class
+- IO Priority: sets the process I/O priority
+- Page Priority: sets the process page priority (Superfetch)
+- CPU Affinity: sets which logical CPUs the process may run on
+- Memory Priority: sets the process memory priority
+- Suspend: suspends the process (moved to the standby list and
+  stops consuming CPU) — v2.44.2
+- Resume: resumes a suspended process — v2.44.2
+
+Workload scope (v2.44.2):
+- Each rule can be restricted to a detected workload type
+  (Game, Mining, Heavy or Office) via the Workload Condition
+  field
+- The rule only applies when the active system workload matches
+  the configured one; a value of 0 (default) applies to any
+  workload
+
+Matching patterns:
+- Exact name: "chrome.exe" matches only chrome.exe
+- Wildcard: "chrome*" matches any process starting with "chrome"
+- Wildcard: "*notepad*" matches any process containing "notepad"
+
+Adding a rule:
+1. Go to File > Settings > Process Rules
+2. Click "Add Rule"
+3. Select the type, value, and process name pattern
+4. Check "Enabled" to activate
+
+Rules are applied automatically when a matching process is
+detected (every 5 seconds) and reverted when the rule is removed.
+
+
+==============================
+19. CPU AFFINITY MANAGER
+==============================
+
+The CPU Affinity Manager provides a visual interface to select
+which logical CPU cores a process may use.
+
+Usage:
+1. Go to File > Settings > Process Rules
+2. Add or edit a "CPU Affinity" rule
+3. Click "Select Affinity" to open the affinity picker
+4. Check/uncheck the desired CPU checkboxes
+5. Use "Select All" or "Clear All" shortcuts
+
+The dialog shows one checkbox per logical CPU, arranged in
+rows of 8 CPUs.
+
+
+==============================
+20. PROCESS WATCHDOG
+==============================
+
+The Process Watchdog continuously monitors process memory
+consumption and performs automatic actions when a configured
+threshold is exceeded.
+
+Configuration:
+1. Go to File > Settings > Watchdog Rules
+2. Click "Add Watchdog Rule"
+3. Define:
+   - Pattern: process name pattern (e.g. "chrome*")
+   - Threshold (MB): Working Set memory limit
+   - Duration (ms): minimum time above threshold before acting
+   - Action: action to perform
+
+Available actions:
+- Terminate: ends the process
+- Restart: terminates and restarts the process automatically
+- Suspend: suspends the process (pauses execution) — v2.44.2
+- Resume: resumes the suspended process — v2.44.2
+- Set CPU Priority: changes CPU priority
+- Set IO Priority: changes I/O priority
+- Set CPU Affinity: changes CPU affinity
+- Log: only logs the event (no action)
+
+Suspend/Resume actions are never applied to RAMFlux itself,
+to critical system processes, or to low PIDs (PID <= 4).
+Suspended processes can be resumed manually from the Processes
+tab (context menu).
+
+The watchdog checks all processes every 5 seconds.
+
+
+==============================
+21. POWER PLAN AUTOMATION
+==============================
+
+Power Plan Automation automatically switches the Windows power
+plan based on detected system activity:
+
+- High Performance: activated when gaming or CPU-intensive
+  workloads are detected
+- Balanced: default during normal desktop use
+- Power Saver: activated when running on battery
+
+Configuration:
+1. Go to File > Settings
+2. Enable "Power Plan Automation"
+3. The active power plan is displayed in the System Info tab
+4. Manual override is possible via Windows power tray icon
+
+The power plan is restored to the previous plan when the
+triggering activity ends.
+
+
+==============================
+22. NETWORK QOS
+==============================
+
+Network QoS assigns DSCP (Differentiated Services Code Point)
+tags to processes, allowing Windows to prioritize network
+traffic.
+
+Priority levels:
+- Very Low (DSCP 0): background transfers
+- Low (DSCP 8): non-critical traffic
+- Normal (DSCP 0): default
+- High (DSCP 46): Express Forwarding — recommended for games,
+  VoIP, and real-time applications
+
+Configuration:
+1. Go to File > Settings
+2. Enable "Network QoS"
+3. Rules can be configured per process (see Process Rules)
+
+
+==============================
+23. RESPONSIVENESS SLIDER
+==============================
+
+The Responsiveness Slider lets you control the trade-off between
+background throughput and foreground responsiveness.
+
+Levels:
+- 0 (Very Low): maximum background throughput, can feel sluggish
+- 1 (Low): balanced with background bias
+- 2 (Normal): balanced (default)
+- 3 (High): maximum foreground responsiveness, ideal for gaming
+  or interactive work
+
+Adjust via Settings > Behavior > Responsiveness Slider.
+Changes take effect immediately.
+
+
+==============================
+24. TROUBLESHOOTING
+==============================
+
+RAMFlux won't open:
+- Verify Visual C++ Redistributable is installed
+- Check the Console tab for error messages
+
+Cleaning doesn't work:
+- RAMFlux.exe runs without admin rights; cleaning operations
+  are performed by RAMFluxHelper.exe, which must be running
+- If the helper is not running, cleaning will be unavailable
+  (monitoring continues normally)
+- To start the helper: run any cleaning action — RAMFlux will
+  prompt to launch the helper (UAC required once)
+- Verify the Scheduled Task exists and is enabled:
+  schtasks /query /tn "RAMFluxHelper"
+- Verify Superfetch/SysMain service is running
+
+RAMFluxHelper is not starting automatically:
+- The helper registers a Scheduled Task on first run. If the
+  registration failed, reinstall the MSI as Administrator.
+- To manually recreate the task, run the helper once as
+  Administrator: RAMFluxHelper.exe
+
+Application closes unexpectedly:
+- Run diagnostics in Settings > Behavior
+- Check the Console for error messages
+- Update to the latest version
+
+"Access Denied" when cleaning:
+- RAMFluxHelper.exe is not running or has insufficient privileges
+- Launch the helper by clicking "Launch Helper" in the cleaning
+  prompt, or run RAMFluxHelper.exe as Administrator manually
+
+Security Notes (v2.13.0):
+- The helper process named pipe now uses a restricted DACL
+  allowing only SYSTEM and Administrators to connect
+- The helper verifies that the connecting client is in the same
+  session, preventing cross-session elevation attacks
+- Crash dumps are written with FILE_ATTRIBUTE_SYSTEM to reduce
+  accidental exposure of sensitive memory contents
+- CLI --dump_duration is now bounded to 5-600 seconds
+
+Security & Thread Safety Audit (v2.42.0):
+- 24 bugs fixed across 15 source files: 6 CRITICAL, 7 HIGH,
+  11 MEDIUM severity
+- CRITICAL: PowerManager use-after-free (callback list iterated
+  without mutex while unsubscribe() could erase elements)
+- CRITICAL: ProfileManager use-after-free (onProfileChanged()
+  had no unsubscribe mechanism; added token-based API)
+- CRITICAL: activeRuleCount data race (m_appliedRules.size()
+  read without lock)
+- CRITICAL: MemoryDedup data race (m_lastScan/m_lastReport
+  accessed without mutex)
+- CRITICAL: ConfigIO undefined behavior (enum parsed from JSON
+  without range validation)
+- HIGH: NetworkQoS data race (m_lastUpdate non-atomic, read/
+  written without mutex)
+- HIGH: cacheIpHlp double-checked locking (s_iphlpCached
+  checked without mutex)
+- HIGH: Named pipe DACL LPE (RAMFluxHelper pipe granted
+  Generic All to Interactive Users; replaced with current
+  user SID via GetTokenInformation)
+- HIGH: Pipe client verification TOCTOU (path check occurred
+  after RevertToSelf(); moved inside impersonation window)
+- HIGH: Handle leak in FluxGameMode (m_gameHandle overwritten
+  without CloseHandle on previous value)
+- HIGH: Unchecked malloc in RAMFluxHelper (tokenUser
+  dereferenced without null check)
+- MEDIUM: ProcessCache m_detailCounter race, getTcpCounts/
+  getUdpCounts underflow, FluxGameMode/MiningMode pid/name
+  race, main.cpp OOB read, registry enum buffer overflow,
+  startupDelaySec unvalidated, LeakHunter HandleCloser
+  made non-copyable
+
+Thread Safety Audit v2 (v2.43.0):
+- 8 bugs fixed: 1 CRITICAL deadlock, 4 HIGH data races,
+  3 MEDIUM data races
+- DiagnosticsEngine: callbacks invoked under m_mutex
+  caused deadlock if callback called unsubscribe(); fixed
+  by copying callback list under lock then invoking
+  outside
+- HeuristicEngine: m_lastCleanTime written from EventBus
+  dispatch thread without any lock while read under
+  m_mutex; replaced with atomic int64 epoch
+- HeuristicEngine: EventBus subscriptions for cleaning
+  events never unsubscribed (dangling this after
+  shutdown); store IDs and unsubscribe on shutdown
+- FluxClassifier: setConfig() wrote m_config without
+  mutex while classifyImpl() read it under m_mutex;
+  setConfig() now locks
+- FluxNTAPI: HardFaultHistory::samples.size() accessed
+  without holding mtx; added locked size() method
+- FluxScheduler: m_originalIntervalMs was plain int
+  read/written without synchronization
+- Logger: m_maxBackupFiles, m_compressBackups written
+  without lock, read under m_mutex; made atomic
+- PluginManager: async lambda captured &p reference
+  into vector (dangling if vector resized); capture
+  raw IPlugin* by value
+
+Security, Thread Safety & Correctness Audit v3 (v2.44.0):
+- 28 bugs fixed: 5 CRITICAL, 12 HIGH, 11 MEDIUM
+- CRITICAL: FluxTelemetry UAF — m_collectionRequest was
+  raw HANDLE with no sync; replaced with atomic<HANDLE>
+- CRITICAL: Named pipe auth bypass — prefix+suffix
+  comparison allowed impersonation; now exact full-path
+- CRITICAL: PluginManager cancel-thread —
+  executeAllWithTimeout() had no cancellation point;
+  removed, only executeAll() remains
+- CRITICAL: PluginManager DLL hijacking —
+  LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR vulnerable to side-
+  loading; removed flag, added try/catch
+- HIGH: Named pipe instance hoarding —
+  PIPE_UNLIMITED_INSTANCES capped to 2
+- HIGH: PluginManager sandbox — setProcessPriority and
+  setProcessIoPriority now reject PID<=4 and self-PID
+- HIGH: getCacheTopology DCLP — broken double-checked
+  locking replaced with std::call_once
+- HIGH: 3x rate calculation races — disk queue length,
+  hard fault prediction, predictive hard fault info;
+  atomic pairs replaced with std::mutex
+- HIGH: 4x bool data races — s_ioCached, s_powerCached,
+  s_powerWriteCached, s_ntdllCached made atomic<bool>
+- HIGH: MainWindow ProfileManager callback — token-based
+  unsubscribe in destructor
+- HIGH: Smart Optimize duplication — deepClean() replaced
+  with quickClean() for distinct behavior
+- HIGH: HeuristicEngine m_effectiveness race — read under
+  m_mutex
+- HIGH: FluxClassifier config() race — added lock_guard
+- MEDIUM: PressurePredictor R² — intercept corrected
+  to regression intercept instead of first sample
+- MEDIUM: FluxClassifier m_history — stale entries
+  (>10min) now cleaned on each recordSample()
+- MEDIUM: ConsoleWidget m_allLines — capped at 10000
+- MEDIUM: ProcessRulesEngine — svchost.exe and dwm.exe
+  added to critical process list
+- MEDIUM: ProcessRulesEngine glob — multi-wildcard pattern
+  matching replaced with proper backtracking matcher
+- MEDIUM: getCacheTopology — Size==0 guard added to
+  prevent infinite loop
+- MEDIUM: trimAllProcesses — PID<=4 now skipped
+- MEDIUM: FluxTelemetry first collect — exceptions now
+  logged instead of silently swallowed
+- MEDIUM: PressurePredictor — vector replaced with deque
+  for O(1) front pop
+
+Security, Thread Safety & Correctness Audit v4 (v2.44.1):
+- 21 bugs fixed: 2 CRITICAL, 5 HIGH, 10 MEDIUM, 4 LOW
+- CRITICAL: Power API self-deadlock — cachePowerApi()/
+  cachePowerWriteApi() re-locked s_powerMutex while callers
+  already held it (UB on first power-plan access)
+- CRITICAL: ModuleManager shutdownAll() — joined worker
+  threads while holding m_mutex, deadlocking on getModule()
+- HIGH: Helper trim PID guard — TRIM:<pid> now rejects
+  PID<=4 and self-PID
+- HIGH: Widget module name mismatch — "Scheduler" corrected
+  to "FluxScheduler" in Hibernate/Responsiveness/PowerPlan
+  widgets (3 widgets were inert)
+- HIGH: HibernateWidget fabricated pressure — evaluate()
+  no longer called with hardcoded 0.0; uses live snapshot
+- HIGH: Saved profile restored on startup from QSettings
+- HIGH: SettingsDialog — all options now load regardless of
+  selected profile (were gated on Custom)
+- MEDIUM: HelperClient overlapped write — WriteFile on
+  FILE_FLAG_OVERLAPPED pipe now passes OVERLAPPED
+- MEDIUM: setAutostart — GetModuleFileNameW result checked
+  and buffer zero-initialized
+- MEDIUM: HibernateAssist m_lastAdvice race — mutex added
+- MEDIUM: IoMonitor m_systemStats race — write moved under
+  mutex
+- MEDIUM: EventBus queued callback UAF — stale subscriptions
+  skipped at dispatch via active-id set
+- MEDIUM: LeakHunter threshold — setThresholdMB() now
+  actually applied from Settings
+- MEDIUM: Deep Clean — failure now surfaced in status bar
+- MEDIUM: Scheduled clean epoch — no longer advances when
+  canClean() returns false
+- MEDIUM: Forecast widget — current pressure passed instead
+  of duplicating predicted 30s
+- LOW: QString::arg with %.1f placeholder corrected to %1
+- LOW: helper privilege now disabled on error paths
+- LOW: ConfigIO — double-to-uint64 casts guarded against
+  negative values
+
+Version 2.52.0 — Seventh Audit (Fase 1 & 2):
+- UI thread: NtApi off-UI via QtConcurrent (IoDashboard, ProcessList, Settings, MainWindow)
+- CI blindado: windeployqt + MSI smoke test + portable ZIP
+- Standby inteligente por prioridade (LOWEST/BELOW_NORMAL/NORMAL by pressure)
+- Portable ZIP + CLI --optimize --json --once
+- Timeline reactivated + explicability + GAME/MINER markers
+- HeuristicEngine 60s critical prediction + UI forecast
+- Dedup + NUMA prototype (offer + rebalance)
+
+Version 2.51.0 — Sixth Audit (security & stability):
+- NTAPI: corrected standby/modified/page/compression memory accounting
+- NTAPI: critical-system-process guards on suspend/limit/quarantine/trim
+- UpdateChecker: strict release-URL validation (host + path allowlist)
+- Helper IPC: mutual pipe authentication (server PID + image verify)
+- Plugins: absolute-path traversal fix, safe LoadLibraryEx flags
+- Benchmark: atomic cancel flag, report path-traversal sanitization
+- PID-reuse/TOCTOU fixes (Memory Firewall, ProcessSuspender, ProcessListWidget)
+- Self/critical exclusion in MemoryDedup & LeakHunter
+- GameMode/Mining: restore own process priority/affinity on exit
+- MemoryQoS: revert page/IO/efficiency state when rule no longer applies
+- Diagnostics: setEnabled now actually gates evaluation
+- Optimizer: cached-memory pressure sign corrected
+- Unbounded history/sample maps bounded (scheduler, analyzer)
+
+Version 2.50.0 — Fifth Audit: 30 bug fixes:
+- Shutdown order fix: EventBus now stops before modules
+  (prevents use-after-free during shutdown)
+- StandbyScanner data race fixed (distributeClean under lock)
+- MLEngine online stats fix (oldMean saved before update)
+- BenchmarkWidget: wait with timeout (prevents UI freeze)
+- PluginManager: use-after-move fixed
+- ProcessRulesEngine: QSettings array properly truncated
+- FluxClassifier: NaN protection on std dev
+- MainWindow: ProfileManager and PowerManager callbacks use QPointer
+- FluxNTAPI: power API cache, privilege leak, and GUID fix
+- PowerManager: real power plan change detection
+- BenchmarkRunner: double-counting removed, static counter fixed
+- ProcessCache: cold page detection restored (wsSnapshot transferred)
+- FluxCleaner: nested events removed, stats corrected
+- FluxScheduler: battery boost protected against re-entry
+- GlobalMemoryStatusEx now checked in all call sites
+- Compression counters split (inefficient vs harmful)
+
+Version 2.44.2:
+- Scientific Health Index (v2.44.2): the overall health score
+  now uses continuous weighted scoring instead of fixed cutoffs,
+  with weights: memory pressure 35%, commit 20%, hard faults 15%,
+  page fault trend 10%, page file 10%, kernel nonpaged pool 5%
+  and compression 5%. Each category (Memory, Disk, I/O, Leaks,
+  System) receives its own score
+- The Health tab now includes the "Health Score Trend" chart,
+  plotting the overall score evolution over time
+- AI Predictive Optimizer (v2.44.2): when the Heuristic Engine
+  pressure prediction indicates a spike (confidence >= 60%),
+  cleaning runs preventively before the spike — selective clean
+  for high pressure, deep clean for critical pressure — with a
+  minimum interval of 2 minutes between runs; cleaning is
+  deferred on anomalies, high disk I/O or low battery
+- Suspend/Resume actions in Process Rules and Process Watchdog
+- Process rules with workload scope (Workload Condition): the
+  rule only applies when the active workload (Game, Mining,
+  Heavy, Office) matches the configured one
+
+==============================
+© 2026 RAMFlux Technologies

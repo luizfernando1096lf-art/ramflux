@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="RAMFlux" Manufacturer="RAMFlux" Version="2.52.0"
+           UpgradeCode="7E52A1B3-8C4D-4F2E-9A6B-1C3D5E7F9A0B"
+           Compressed="yes" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of RAMFlux is already installed." />
+    <Media Id="1" Cabinet="ramflux.cab" EmbedCab="yes" />
+    <Property Id="ARPPRODUCTICON" Value="RAMFluxIcon" />
+    <WixVariable Id="WixUILicenseRtf" Value="installer\eula.rtf" />
+    <Property Id="ARPCOMMENTS" Value="Memory optimization and system diagnostics tool" />
+    <Property Id="ARPCONTACT" Value="RAMFlux" />
+    <Property Id="ARPURLINFOABOUT" Value="https://ramflux.example.com" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://ramflux.example.com/updates" />
+    <Property Id="ApplicationFolderName" Value="RAMFlux" />
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+
+    <!-- Install UI wizard (Next / Back / Finish) -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="DIR_RAMFlux" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="DIR_RAMFlux" Name="RAMFlux">
+        <Directory Id="DIR_iconengines" Name="iconengines" />
+        <Directory Id="DIR_imageformats" Name="imageformats" />
+        <Directory Id="DIR_networkinformation" Name="networkinformation" />
+        <Directory Id="DIR_platforms" Name="platforms" />
+        <Directory Id="DIR_styles" Name="styles" />
+        <Directory Id="DIR_tls" Name="tls" />
+        <Directory Id="DIR_generic" Name="generic" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="DIR_RAMFluxShortcuts" Name="RAMFlux">
+        <Component Id="C_Shortcuts" Guid="A7B9D1E3-F5C7-4902-B1A3-C5D7E9F1B3D5">
+          <Shortcut Id="S_RAMFlux" Name="RAMFlux" Description="RAMFlux - Memory Optimizer"
+                    Target="[DIR_RAMFlux]RAMFlux.exe" WorkingDirectory="DIR_RAMFlux">
+            <Icon Id="RAMFluxIcon" SourceFile="E:\projetos\RAMFlux\build2\deploy\RAMFlux.exe" />
+          </Shortcut>
+          <Shortcut Id="S_RAMFluxUninstall" Name="RAMFlux (Uninstall)" Description="Uninstall RAMFlux"
+                    Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]" />
+          <RemoveFolder Id="RF_RAMFluxShortcuts" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\RAMFlux" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="F_RAMFlux" Title="RAMFlux" Level="1" TypicalDefault="install">
+      <ComponentGroupRef Id="CG_RAMFlux" />
+      <ComponentRef Id="C_Shortcuts" />
+    </Feature>
+  </Package>
+  <Fragment>
+    <ComponentGroup Id="CG_RAMFlux" Directory="DIR_RAMFlux">
+      <Component Id="C_RAMFlux" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <File Id="F_RAMFlux" Source="E:\projetos\RAMFlux\build2\deploy\RAMFlux.exe" />
+        <File Id="F_RAMFluxHelper" Source="E:\projetos\RAMFlux\build2\deploy\RAMFluxHelper.exe" />
+        <File Id="F_libgcc" Source="E:\projetos\RAMFlux\build2\deploy\libgcc_s_seh-1.dll" />
+        <File Id="F_libstdcpp" Source="E:\projetos\RAMFlux\build2\deploy\libstdc++-6.dll" />
+        <File Id="F_libwinpthread" Source="E:\projetos\RAMFlux\build2\deploy\libwinpthread-1.dll" />
+        <File Id="F_Qt6Charts" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Charts.dll" />
+        <File Id="F_Qt6Core" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Core.dll" />
+        <File Id="F_Qt6Gui" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Gui.dll" />
+        <File Id="F_Qt6Network" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Network.dll" />
+        <File Id="F_Qt6OpenGL" Source="E:\projetos\RAMFlux\build2\deploy\Qt6OpenGL.dll" />
+        <File Id="F_Qt6OpenGLWidgets" Source="E:\projetos\RAMFlux\build2\deploy\Qt6OpenGLWidgets.dll" />
+        <File Id="F_Qt6Widgets" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Widgets.dll" />
+        <File Id="F_Qt6Svg" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Svg.dll" />
+        <File Id="F_Qt6Concurrent" Source="E:\projetos\RAMFlux\build2\deploy\Qt6Concurrent.dll" />
+        <File Id="F_D3Dcompiler47" Source="E:\projetos\RAMFlux\build2\deploy\D3Dcompiler_47.dll" />
+        <File Id="F_libb2" Source="E:\projetos\RAMFlux\build2\deploy\libb2-1.dll" />
+        <File Id="F_libbrotlicommon" Source="E:\projetos\RAMFlux\build2\deploy\libbrotlicommon.dll" />
+        <File Id="F_libbrotlidec" Source="E:\projetos\RAMFlux\build2\deploy\libbrotlidec.dll" />
+        <File Id="F_libbz2" Source="E:\projetos\RAMFlux\build2\deploy\libbz2-1.dll" />
+        <File Id="F_libdoubleconversion" Source="E:\projetos\RAMFlux\build2\deploy\libdouble-conversion.dll" />
+        <File Id="F_libfreetype" Source="E:\projetos\RAMFlux\build2\deploy\libfreetype-6.dll" />
+        <File Id="F_libglib" Source="E:\projetos\RAMFlux\build2\deploy\libglib-2.0-0.dll" />
+        <File Id="F_libgraphite2" Source="E:\projetos\RAMFlux\build2\deploy\libgraphite2.dll" />
+        <File Id="F_libharfbuzz" Source="E:\projetos\RAMFlux\build2\deploy\libharfbuzz-0.dll" />
+        <File Id="F_libiconv" Source="E:\projetos\RAMFlux\build2\deploy\libiconv-2.dll" />
+        <File Id="F_libicudt77" Source="E:\projetos\RAMFlux\build2\deploy\libicudt77.dll" />
+        <File Id="F_libicuin77" Source="E:\projetos\RAMFlux\build2\deploy\libicuin77.dll" />
+        <File Id="F_libicuio77" Source="E:\projetos\RAMFlux\build2\deploy\libicuio77.dll" />
+        <File Id="F_libicutu77" Source="E:\projetos\RAMFlux\build2\deploy\libicutu77.dll" />
+        <File Id="F_libicuuc77" Source="E:\projetos\RAMFlux\build2\deploy\libicuuc77.dll" />
+        <File Id="F_libintl" Source="E:\projetos\RAMFlux\build2\deploy\libintl-8.dll" />
+        <File Id="F_libmd4c" Source="E:\projetos\RAMFlux\build2\deploy\libmd4c.dll" />
+        <File Id="F_libpcre2_16" Source="E:\projetos\RAMFlux\build2\deploy\libpcre2-16-0.dll" />
+        <File Id="F_libpcre2_8" Source="E:\projetos\RAMFlux\build2\deploy\libpcre2-8-0.dll" />
+        <File Id="F_libpng16" Source="E:\projetos\RAMFlux\build2\deploy\libpng16-16.dll" />
+        <File Id="F_libzstd" Source="E:\projetos\RAMFlux\build2\deploy\libzstd.dll" />
+        <File Id="F_zlib1" Source="E:\projetos\RAMFlux\build2\deploy\zlib1.dll" />
+      </Component>
+      <Component Id="C_iconengines" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901" Directory="DIR_iconengines">
+        <File Id="F_qsvgicon" Source="E:\projetos\RAMFlux\build2\deploy\iconengines\qsvgicon.dll" />
+      </Component>
+      <Component Id="C_imageformats" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012" Directory="DIR_imageformats">
+        <File Id="F_qgif" Source="E:\projetos\RAMFlux\build2\deploy\imageformats\qgif.dll" />
+        <File Id="F_qico" Source="E:\projetos\RAMFlux\build2\deploy\imageformats\qico.dll" />
+        <File Id="F_qjpeg" Source="E:\projetos\RAMFlux\build2\deploy\imageformats\qjpeg.dll" />
+        <File Id="F_qsvg" Source="E:\projetos\RAMFlux\build2\deploy\imageformats\qsvg.dll" />
+      </Component>
+      <Component Id="C_networkinfo" Guid="D4E5F6A7-B8C9-0123-DEF1-234567890123" Directory="DIR_networkinformation">
+        <File Id="F_qnetworklistmgr" Source="E:\projetos\RAMFlux\build2\deploy\networkinformation\qnetworklistmanager.dll" />
+      </Component>
+      <Component Id="C_platforms" Guid="E5F6A7B8-C9D0-1234-EF12-345678901234" Directory="DIR_platforms">
+        <File Id="F_qwindows" Source="E:\projetos\RAMFlux\build2\deploy\platforms\qwindows.dll" />
+      </Component>
+      <Component Id="C_styles" Guid="F6A7B8C9-D0E1-2345-F123-456789012345" Directory="DIR_styles">
+        <File Id="F_qmodernstyle" Source="E:\projetos\RAMFlux\build2\deploy\styles\qmodernwindowsstyle.dll" />
+      </Component>
+      <Component Id="C_tls" Guid="A7B8C9D0-E1F2-3456-1234-567890123456" Directory="DIR_tls">
+        <File Id="F_qcertonly" Source="E:\projetos\RAMFlux\build2\deploy\tls\qcertonlybackend.dll" />
+        <File Id="F_qschannel" Source="E:\projetos\RAMFlux\build2\deploy\tls\qschannelbackend.dll" />
+      </Component>
+      <Component Id="C_generic" Guid="B8C9D0E1-F2A3-4567-2345-678901234567" Directory="DIR_generic">
+        <File Id="F_qtuiotouch" Source="E:\projetos\RAMFlux\build2\deploy\generic\qtuiotouchplugin.dll" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

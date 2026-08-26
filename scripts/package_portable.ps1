@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "2.51.0",
+    [string]$Version = "2.52.0",
     [string]$DeployDir = "build2/deploy",
     [string]$OutFile = ""
 )

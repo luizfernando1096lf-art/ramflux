@@ -1,109 +1,67 @@
-# RAMFlux
-## Intelligent Memory Orchestrator for Windows
+# RAMFlux Roadmap — Rumo ao Melhor Orquestrador de Memória do Windows
+
+> Visão: ser o `Process Lasso + RAMMap + ISLC` em um só, mas inteligente, seguro e comprovadamente eficaz.
+
+## Matriz Esforço x Impacto
+
+| Ideia | Impacto | Esforço | Fase |
+|-------|---------|---------|------|
+| CI: windeployqt + teste MSI em VM limpa | Alto (evita bug Brotli) | Baixo | 2.52 |
+| Portable ZIP + CLI `--json` | Alto | Baixo | 2.52 |
+| Off-UI thread (M1/M2) | Alto (fim dos travamentos) | Médio | 2.52 |
+| Standby por prioridade (não só limpar) | Muito Alto | Médio | 2.52 |
+| Reversão transacional + teste de caos | Alto | Médio | 2.52 |
+| Timeline de memória + explicabilidade | Alto | Médio | 2.53 |
+| HeuristicEngine preditivo (60s) | Muito Alto | Alto | 2.53 |
+| Perfis auto-aprendidos por exe | Muito Alto | Alto | 2.53 |
+| Métrica "MB sem hard faults" | Alto | Baixo | 2.53 |
+| Dedup COW real | Muito Alto | Muito Alto | 3.0 |
+| NUMA/cache-aware dinâmico | Alto | Alto | 3.0 |
+| WSL2/vmmem + VRAM orchestration | Médio | Médio | 3.0 |
 
 ---
 
-# PROJECT OVERVIEW
+## Fase 1 — v2.52 Fundação Sólida (2-3 semanas)
 
-RAMFlux is a modern low-overhead Windows memory optimization platform focused on:
+### 1. Confiabilidade Primeiro
+- [ ] **CI blindado:** `windeployqt6` no `build2` + `gh actions` que instala MSI em `windows-latest` limpo e roda `RAMFlux.exe --benchmark`
+- [ ] **Reversão 100%:** teste de caos — matar processo no meio de `applyGameOptimizations` e garantir restore. Fuzz em `MemoryQoS`
+- [ ] **Off-UI thread:** mover `NtApi::getPhysicalMemoryBreakdown/getCompressionStoreInfo` para `QThreadPool`, UI só consome `MemorySnapshot` via `EventBus`
 
-- intelligent memory orchestration
-- telemetry
-- observability
-- adaptive heuristics
-- process analytics
-- stability-first optimization
-- premium Windows 11 UX
+### 2. Orquestração Inteligente (não burra)
+- [ ] **Standby inteligente:** trocar `clearStandbyList()` cego por `NtSetSystemInformation(SystemMemoryListInformation)` com prioridades 0-7. Manter cache quente.
+- [ ] **OfferVirtualMemory:** para processos com `coldPageBytes > 30%`, usar `OfferVirtualMemory` ao invés de `EmptyWorkingSet` — sem page fault na volta.
 
-The software is inspired by tools like:
-- Memory Reduct
-- Process Explorer
-- telemetry dashboards
-- observability platforms
+### 3. Distribuição
+- [ ] **Portable ZIP:** `build2/deploy` zipado + `RAMFluxHelper` opcional
+- [ ] **CLI headless:** `RAMFlux.exe --optimize --json --once` para servidores/scripts
 
 ---
 
-# PRIMARY GOALS
+## Fase 2 — v2.53 Inteligência (4-6 semanas)
 
-RAMFlux aims to:
-
-- improve system responsiveness
-- reduce memory pressure intelligently
-- avoid destructive optimizations
-- provide advanced telemetry
-- maintain extremely low overhead
-- deliver a premium user experience
+- [ ] **Timeline:** gráfico empilhado `standby/modified/compressed/free` + marcadores "Jogo X detectado → cache 512MB"
+- [ ] **Explicabilidade:** `Pressão 78% → Chrome 2.1GB standby + 120 faults/s`
+- [ ] **Métrica honesta:** `BenchmarkRunner` reporta `hardFaultsDelta` e `standbyReclaimed`. Provar que não é placebo.
+- [ ] **HeuristicEngine preditivo:** regressão linear em `faultTrend + standbyGB` → prever pressão 60s, agir antes
+- [ ] **Perfis auto-aprendidos:** se `exe` tem `avgWorkingSet > 1GB` e `peak > 2GB` em 3 execuções, auto-criar regra `PAGE_PRIORITY_LOW` para background
 
 ---
 
-# CORE PHILOSOPHY
+## Fase 3 — v3.0 Domínio (2-3 meses)
 
-RAMFlux DOES NOT aim to:
-- free RAM visually only
-- aggressively purge memory constantly
-- fake optimization results
-
-RAMFlux DOES aim to:
-- improve responsiveness
-- optimize contextually
-- operate safely
-- adapt to workload behavior
-- remain stable and lightweight
+- [ ] **Dedup COW:** `VirtualAlloc2` + `MEM_WRITE_WATCH` + hash FNV — único no Windows consumer
+- [ ] **NUMA dinâmico:** migrar threads com `SetThreadGroupAffinity` baseado em `LLC miss` via `NtQuerySystemInformation`
+- [ ] **VRAM + WSL2:** `getVideoMemoryInfo()` já existe — orquestrar `vmmem` e VRAM juntos. Limitar `WSL2` via `.wslconfig` dinâmico
+- [ ] **Marketplace de regras:** export/import de `ProcessRules` + comunidade
 
 ---
 
-# TECHNOLOGY STACK
+## Como medir sucesso
 
-- C++20
-- Qt6
-- CMake
-- Windows 10/11
-- NTAPI
-- MinGW 13.1.0 64-bit
-- WiX Toolset v7
+- **Hard faults/s < 20** sob carga (vs >100 sem RAMFlux)
+- **Standby reclaim > 500MB sem aumentar faults**
+- **Game 1% low FPS +5-10%** (vs sem otimização)
+- **0 crashes em 30 dias** em 100 máquinas (telemetria opt-in)
 
----
-
-# PROJECT STRUCTURE
-
-```text
-RAMFlux/
-│
-├── src/
-│   ├── ai/              (HeuristicEngine, WorkloadClassifier, PressurePredictor, MLEngine, IoCostTracker, StandbyScanner, PagePrefetcher)
-│   ├── analyzer/        (FluxProcessAnalyzer — CPU sampling, leak detection)
-│   ├── benchmark/       (BenchmarkRunner — 5-phase scientific benchmarking, tri-format reports)
-│   ├── classifier/      (FluxClassifier — per-process memory pattern classification)
-│   ├── cleaner/         (FluxCleaner — adaptive, battery-aware, idle-aware WS trim)
-│   ├── core/            (EventBus c/ dispatch thread, FluxCore, ModuleManager, Logger c/ rotação)
-│   ├── dedup/           (MemoryDedup — cross-process page dedup detection via FNV-1a hashing)
-│   ├── diagnostics/     (DiagnosticsEngine — system diagnostics and health reporting)
-│   ├── gamemode/        (FluxGameMode — fullscreen detection, VRAM monitoring, competitive mode)
-│   ├── helper/          (HelperClient — IPC com RAMFluxHelper.exe elevado)
-│   ├── hibernate/       (HibernateAssist — hibernation and fast startup management)
-│   ├── io/              (ConfigIO — import/export config; UpdateChecker — version update check)
-│   ├── leakhunter/      (LeakHunter — memory leak detection)
-│   ├── mining/          (FluxMiningMode — CPU miner detection, priority boost, background throttle)
-│   ├── ntapi/           (FluxNTAPI — compression, NUMA, page priority, disk queue, power, pool, QoS, I/O stats)
-│   ├── optimizer/       (FluxOptimizer — pressure scoring)
-│   ├── plugins/         (PluginManager — DLL-based plugin system with sandboxed execution)
-│   ├── power/           (PowerManager — dynamic power plan switching)
-│   ├── process/         (ProcessCache — WS aging tracking, session aggregation)
-│   ├── profiles/        (ProfileManager — 5 perfis, reconfiguração dinâmica)
-│   ├── qos/             (MemoryQoS — per-process memory SLAs with automatic enforcement)
-│   ├── rules/           (ProcessRulesEngine — regras persistentes, wildcards, watchdog)
-│   ├── scheduler/       (FluxScheduler — AI-driven, ProBalance, battery boost, CpuLimiter, ProcessSuspender, NetworkQoS, ResponsivenessSlider, IoMonitor, IoBandwidthThrottler)
-│   ├── shared/          (Constants, ProcessUtils — verifyProcessName compartilhado)
-│   ├── telemetry/       (FluxTelemetry, MemoryCollector, MemorySnapshot, HistoryBuffer)
-│   └── ui/              (MainWindow, ConsoleWidget, IoDashboardWidget, Memory Map, ForecastWidget, AI Heuristics, NUMA, compression, CpuAffinityDialog, ThemeManager)
-│
-├── resources/           (manuals, icons, manifests, RC files)
-├── Docs/                (architecture, roadmap, versioning, code style, phases)
-├── build/               (CMake build output, MSI, deploy/)
-├── installer/           (EULA, WiX assets)
-├── CMakeLists.txt
-├── installer.wxs        (WiX v4 → v7)
-├── README.md
-├── SECURITY.md
-├── CHANGELOG.md
-└── .gitignore
+Quer priorizar uma fase? Abra uma issue com `Fase 1` label.
