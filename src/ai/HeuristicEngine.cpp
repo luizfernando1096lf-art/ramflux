@@ -8,6 +8,8 @@
 #include "scheduler/FluxScheduler.h"
 #include "cleaner/FluxCleaner.h"
 #include "rules/ProcessRulesEngine.h"
+#include "ntapi/FluxNTAPI.h"
+#include "process/ProcessCache.h"
 #include <chrono>
 #include <thread>
 #include <exception>
@@ -33,6 +35,7 @@ bool HeuristicEngine::initialize() {
                 std::chrono::steady_clock::now().time_since_epoch()).count();
             m_ioCostTracker.afterClean();
         });
+    m_dedup.setOfferEnabled(true);
     m_running = true;
     m_thread = std::thread(&HeuristicEngine::analysisLoop, this);
     Logger::instance().info("[HeuristicEngine] AI thread started");
@@ -71,6 +74,7 @@ void HeuristicEngine::analysisLoop() {
             if(telemetry) {
                 auto snap = telemetry->lastSnapshot();
                 feedSnapshot(snap);
+                balanceNumaIfNeeded(snap);
             }
             adjustModuleParams();
         } catch(const std::exception& e) {
@@ -211,6 +215,39 @@ void HeuristicEngine::tuneFromMetrics() {
     }
     m_tuningParams = p;
 }
+void HeuristicEngine::balanceNumaIfNeeded(const Telemetry::MemorySnapshot& snap) {
+    auto now = std::chrono::steady_clock::now();
+    if(std::chrono::duration_cast<std::chrono::seconds>(now - m_lastNumaBalance).count() < 60) return;
+    m_lastNumaBalance = now;
+    auto numa = NtApi::getNumaInfo();
+    if(numa.highestNode == 0 || numa.availableMemoryPerNode.size() <= 1) return;
+    uint64_t maxAvail = 0, minAvail = UINT64_MAX;
+    int maxNode = 0, minNode = 0;
+    for(size_t i = 0; i < numa.availableMemoryPerNode.size(); ++i) {
+        uint64_t avail = numa.availableMemoryPerNode[i];
+        if(avail > maxAvail) { maxAvail = avail; maxNode = static_cast<int>(i); }
+        if(avail < minAvail) { minAvail = avail; minNode = static_cast<int>(i); }
+    }
+    uint64_t imbalance = (maxAvail > minAvail) ? (maxAvail - minAvail) : 0;
+    if(imbalance < 2ULL * 1024 * 1024 * 1024) return; // <2GB not worth
+    Logger::instance().info(std::string("[HeuristicEngine] NUMA imbalance: node ") + std::to_string(minNode)
+        + " " + std::to_string(minAvail / (1024*1024)) + "MB vs node " + std::to_string(maxNode)
+        + " " + std::to_string(maxAvail / (1024*1024)) + "MB (diff " + std::to_string(imbalance / (1024*1024)) + "MB)");
+    if(m_tuningParams.aggressiveFactor < 1.0) return; // only rebalance when confident
+    auto entries = Process::ProcessCache::instance().processes();
+    for(auto& e : entries) {
+        if(e.pid <= 4 || e.pid == GetCurrentProcessId()) continue;
+        uint32_t node = NtApi::getProcessNumaNode(e.pid);
+        if(node == static_cast<uint32_t>(minNode) && e.workingSet > 100ULL * 1024 * 1024) {
+            if(NtApi::setProcessNumaAffinityByNode(e.pid, static_cast<uint32_t>(maxNode))) {
+                Logger::instance().info(std::string("[HeuristicEngine] NUMA rebalance: PID ") + std::to_string(e.pid)
+                    + " (" + std::string(e.name.begin(), e.name.end()) + ") " + std::to_string(minNode) + "->" + std::to_string(maxNode));
+                break; // one per cycle
+            }
+        }
+    }
+    (void)snap;
+}
 void HeuristicEngine::adjustModuleParams() {
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastTuneTime).count();
@@ -302,6 +339,9 @@ void HeuristicEngine::evaluateAndPost(const Telemetry::MemorySnapshot& snap) {
     m_pagePrefetcher.refresh();
     auto qosResult = m_qos.enforce(snap);
     auto dedupResult = m_dedup.scan(snap);
+    if(dedupResult.totalEstimatedSavingsBytes > 5ULL * 1024 * 1024) {
+        m_dedup.tryOfferDuplicates(dedupResult, snap);
+    }
     auto pred30 = m_predictor.predict(30);
     auto pred60 = m_predictor.predict(60);
     auto pred120 = m_predictor.predict(120);
